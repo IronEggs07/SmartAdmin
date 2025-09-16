@@ -1,31 +1,23 @@
 <!--
-  * 厂商列表
+  * 机器型号列表
 -->
 <template>
     <!---------- 查询表单form begin ----------->
     <a-form class="smart-query-form">
-      <a-row class="smart-query-form-row" v-privilege="'manufacturer:query'">
-        <a-form-item label="厂家名称" class="smart-query-form-item">
-          <a-input style="width: 200px" v-model:value="queryForm.manufacturerName" placeholder="请输入厂家名称" @pressEnter="onSearch" />
+      <a-row class="smart-query-form-row" v-privilege="'model:query'">
+        <a-form-item label="型号名称" class="smart-query-form-item">
+          <a-input style="width: 200px" v-model:value="queryForm.modelName" placeholder="请输入型号名称" @pressEnter="onSearch" />
         </a-form-item>
-  
-        <a-form-item label="联系人" class="smart-query-form-item">
-          <a-input style="width: 150px" v-model:value="queryForm.contactPerson" placeholder="请输入联系人" @pressEnter="onSearch" />
-        </a-form-item>
-  
-        <a-form-item label="联系电话" class="smart-query-form-item">
-          <a-input style="width: 150px" v-model:value="queryForm.contactPhone" placeholder="请输入联系电话" @pressEnter="onSearch" />
-        </a-form-item>
-  
+
         <a-form-item class="smart-query-form-item">
           <a-button-group>
-            <a-button type="primary" @click="onSearch" v-privilege="'manufacturer:query'">
+            <a-button type="primary" @click="onSearch" v-privilege="'model:query'">
               <template #icon>
                 <SearchOutlined />
               </template>
               查询
             </a-button>
-            <a-button @click="resetQuery" v-privilege="'manufacturer:query'">
+            <a-button @click="resetQuery" v-privilege="'model:query'">
               <template #icon>
                 <ReloadOutlined />
               </template>
@@ -36,19 +28,19 @@
       </a-row>
     </a-form>
     <!---------- 查询表单form end ----------->
-  
+
     <a-card size="small" :bordered="false" :hoverable="true">
       <!---------- 表格操作行 begin ----------->
       <a-row class="smart-table-btn-block">
         <div class="smart-table-operate-block">
-          <a-button @click="addManufacturer()" type="primary" v-privilege="'manufacturer:add'">
+          <a-button @click="addModel()" type="primary" v-privilege="'model:add'">
             <template #icon>
               <PlusOutlined />
             </template>
             新建
           </a-button>
-  
-          <a-button @click="confirmBatchDelete" danger :disabled="selectedRowKeyList.length === 0" v-privilege="'manufacturer:batchDelete'">
+
+          <a-button @click="confirmBatchDelete" danger :disabled="selectedRowKeyList.length === 0" v-privilege="'model:batchDelete'">
             <template #icon>
               <DeleteOutlined />
             </template>
@@ -56,7 +48,7 @@
           </a-button>
         </div>
         <div class="smart-table-setting-block">
-          <TableOperator v-model="columns" :tableId="TABLE_ID_CONST.BUSINESS.ERP.MANUFACTURER" :refresh="queryData" />
+          <TableOperator v-model="columns" :tableId="TABLE_ID_CONST.BUSINESS.ERP.MODEL" :refresh="queryData" />
         </div>
       </a-row>
       <!---------- 表格操作行 end ----------->
@@ -64,7 +56,7 @@
         size="small"
         :dataSource="tableData"
         :columns="columns"
-        rowKey="manufacturerId"
+        rowKey="modelId"
         :scroll="{ x: 1000, y: yHeight }"
         bordered
         :pagination="false"
@@ -77,17 +69,17 @@
         <template #headerCell="{ column }">
           <SmartHeaderCell v-model:value="queryForm[column.filterOptions?.key || column.dataIndex]" :column="column" @change="queryData" />
         </template>
-  
+
         <template #bodyCell="{ record, column }">
           <template v-if="column.dataIndex === 'action'">
             <div class="smart-table-operate">
-              <a-button @click="addManufacturer(record)" type="link" v-privilege="'manufacturer:update'">编辑</a-button>
-              <a-button @click="deleteManufacturer(record)" danger type="link" v-privilege="'manufacturer:delete'">删除</a-button>
+              <a-button @click="addModel(record)" type="link" v-privilege="'model:update'">编辑</a-button>
+              <a-button @click="deleteModel(record)" danger type="link" v-privilege="'model:delete'">删除</a-button>
             </div>
           </template>
         </template>
       </a-table>
-  
+
       <div class="smart-query-table-page">
         <a-pagination
           showSizeChanger
@@ -102,15 +94,15 @@
           :show-total="(total) => `共${total}条`"
         />
       </div>
-  
+
       <!-- 表单抽屉 -->
-      <ManufacturerFormModal ref="formModal" @reloadList="queryData" />
+      <ModelFormModal ref="formModal" @reloadList="queryData" />
     </a-card>
   </template>
-  
+
   <script setup>
-    import { manufacturerApi } from '/@/api/business/manufacturer/manufacturer-api.js';
-    import ManufacturerFormModal from './components/manufacturer-form-modal.vue'; // 修正1：组件名改为PascalCase
+    import { machineModelApi } from '/@/api/business/vending/model-api.js';
+    import ModelFormModal from './components/model-form-modal.vue';
     import { onMounted, reactive, ref } from 'vue';
     import { message, Modal } from 'ant-design-vue';
     import { SmartLoading } from '/@/components/framework/smart-loading';
@@ -120,44 +112,60 @@
     import { TABLE_ID_CONST } from '/@/constants/support/table-id-const';
     import _ from 'lodash';
     import SmartHeaderCell from '/@/components/support/table-header-cell/index.vue';
-  
+
     // ---------------------------- 表格列 ----------------------------
-  
+
     const columns = ref([
       {
-        title: '序号',
-        dataIndex: 'id',
-        width: 80,
+        title: '型号ID',
+        dataIndex: 'modelId',
+        width: 100,
         resizable: true,
         align: 'center',
       },
       {
-        title: '厂家名称',
-        dataIndex: 'manufacturerName',
+        title: '型号名称',
+        dataIndex: 'modelName',
         resizable: true,
         filterOptions: {
           type: 'input',
-          key: 'manufacturerName',
+          key: 'modelName',
         },
         width: 200,
       },
       {
-        title: '联系人',
-        dataIndex: 'contactPerson',
+        title: '货道数量',
+        dataIndex: 'aisleCount',
         resizable: true,
         width: 120,
+        align: 'center',
       },
       {
-        title: '联系电话',
-        dataIndex: 'contactPhone',
+        title: '单次最大限购数量',
+        dataIndex: 'maxPurchase',
         resizable: true,
         width: 150,
+        align: 'center',
+      },
+      {
+        title: '备注',
+        dataIndex: 'remark',
+        resizable: true,
+        width: 200,
       },
       {
         title: '创建时间',
         dataIndex: 'createTime',
         resizable: true,
         width: 180,
+        sorter: true,
+      },
+      {
+        title: '更新时间',
+        dataIndex: 'updateTime',
+        resizable: true,
+        width: 180,
+        sorter: true,
       },
       {
         title: '操作',
@@ -166,13 +174,11 @@
         width: 150,
       },
     ]);
-  
+
     // ---------------------------- 查询数据表单和方法 ----------------------------
-  
+
     const queryForm = reactive({
-      manufacturerName: undefined, // 厂家名称
-      contactPerson: undefined, // 联系人
-      contactPhone: undefined, // 联系电话
+      modelName: undefined, // 型号名称
       pageNum: 1,
       pageSize: 10,
       sortItemList: [], // 添加排序项
@@ -183,7 +189,7 @@
     const tableData = ref([]);
     // 总数
     const total = ref(0);
-  
+
     function handleResizeColumn(w, col) {
       columns.value.forEach((item) => {
         if (item.dataIndex === col.dataIndex) {
@@ -194,25 +200,22 @@
     }
     // 重置查询条件
     function resetQuery() {
-      queryForm.manufacturerName = undefined;
-      queryForm.contactPerson = undefined;
-      queryForm.contactPhone = undefined;
+      queryForm.modelName = undefined;
       queryForm.pageNum = 1;
       onSearch();
     }
-  
+
     // 搜索
     function onSearch() {
       queryForm.pageNum = 1;
       queryData();
     }
-  
+
     // 查询数据
     async function queryData() {
       tableLoading.value = true;
       try {
-        // 修正2：使用正确的API方法
-        let queryResult = await manufacturerApi.queryManufacturerList(queryForm);
+        let queryResult = await machineModelApi.queryMachineModelList(queryForm);
         tableData.value = queryResult.data.list;
         total.value = queryResult.data.total;
       } catch (e) {
@@ -221,31 +224,31 @@
         tableLoading.value = false;
       }
     }
-  
+
     onMounted(queryData);
-  
+
     // ---------------------------- 添加/修改 ----------------------------
-    // 修正3：使用ref引用子组件
+
     const formModal = ref();
-  
-    // 修正4：修改调用方式，与goods模块保持一致
-    function addManufacturer(record) {
+
+    // 添加/编辑型号
+    function addModel(record) {
       formModal.value.showDrawer(record);
     }
-  
+
     // ---------------------------- 删除 ----------------------------
-  
+
     // 单个删除
-    async function deleteManufacturer(record) {
+    async function deleteModel(record) {
       Modal.confirm({
         title: '提示',
-        content: `确定要删除【${record.manufacturerName}】吗？`,
+        content: `确定要删除型号【${record.modelName}】吗？`,
         okText: '删除',
         okType: 'danger',
         onOk: async () => {
           SmartLoading.show();
           try {
-            await manufacturerApi.deleteManufacturer(record.manufacturerId);
+            await machineModelApi.deleteMachineModel(record.modelId);
             message.success('删除成功');
             queryData();
           } catch (e) {
@@ -257,25 +260,25 @@
         cancelText: '取消',
       });
     }
-  
+
     // ---------------------------- 批量删除 ----------------------------
-  
+
     const selectedRowKeyList = ref([]);
-  
+
     function onSelectChange(selectedRowKeys) {
       selectedRowKeyList.value = selectedRowKeys;
     }
-  
+
     // 确认批量删除
     function confirmBatchDelete() {
       if (selectedRowKeyList.value.length === 0) {
-        message.warning('请选择要删除的厂家');
+        message.warning('请选择要删除的型号');
         return;
       }
-  
+
       Modal.confirm({
         title: '提示',
-        content: `确定要删除选中的 ${selectedRowKeyList.value.length} 个厂家吗？`,
+        content: `确定要删除选中的 ${selectedRowKeyList.value.length} 个型号吗？`,
         okText: '删除',
         okType: 'danger',
         onOk: batchDelete,
@@ -286,8 +289,7 @@
     async function batchDelete() {
       try {
         SmartLoading.show();
-        // 修正5：API方法名可能存在的拼写错误 (根据goods模块推断)
-        await manufacturerApi.batchDelete(selectedRowKeyList.value);
+        await machineModelApi.batchDelete(selectedRowKeyList.value);
         message.success('删除成功');
         selectedRowKeyList.value = [];
         queryData();
@@ -297,9 +299,9 @@
         SmartLoading.hide();
       }
     }
-  
+
     // ---------------------------- 表格排序 ----------------------------
-  
+
     function onChange(pagination, filters, sorter, { action }) {
       if (action === 'sort') {
         const { order, field } = sorter;

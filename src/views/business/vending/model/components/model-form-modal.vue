@@ -1,17 +1,20 @@
 <!--
-  * 厂家表单（抽屉样式）
+  * 机器型号表单（抽屉样式）
 -->
 <template>
-    <a-drawer :title="form.manufacturerId ? '编辑厂家' : '新增厂家'" :width="500" :open="visible" :body-style="{ paddingBottom: '80px' }" @close="onClose">
-      <a-form ref="formRef" :model="form" :rules="rules" :label-col="{ span: 5 }">
-        <a-form-item label="厂家名称" name="manufacturerName">
-          <a-input v-model:value="form.manufacturerName" placeholder="请输入厂家名称" />
+    <a-drawer :title="form.modelId ? '编辑型号' : '新增型号'" :width="500" :open="visible" :body-style="{ paddingBottom: '80px' }" @close="onClose">
+      <a-form ref="formRef" :model="form" :rules="rules" :label-col="{ span: 8 }">
+        <a-form-item label="型号名称" name="modelName">
+          <a-input v-model:value="form.modelName" placeholder="请输入型号名称" />
         </a-form-item>
-        <a-form-item label="联系人" name="contactPerson">
-          <a-input v-model:value="form.contactPerson" placeholder="请输入联系人" />
+        <a-form-item label="货道数量" name="aisleCount">
+          <a-input-number v-model:value="form.aisleCount" :min="1" :max="100" style="width: 100%" placeholder="请输入货道数量" />
         </a-form-item>
-        <a-form-item label="联系电话" name="contactPhone">
-          <a-input v-model:value="form.contactPhone" placeholder="请输入联系电话" />
+        <a-form-item label="单次最大限购数量" name="maxPurchase">
+          <a-input-number v-model:value="form.maxPurchase" :min="1" :max="100" style="width: 100%" placeholder="请输入单次最大限购数量" />
+        </a-form-item>
+        <a-form-item label="备注" name="remark">
+          <a-textarea v-model:value="form.remark" placeholder="请输入备注信息" :rows="3" />
         </a-form-item>
       </a-form>
       <div
@@ -37,7 +40,7 @@
   import { ref, reactive, nextTick } from 'vue';
   import { message } from 'ant-design-vue';
   import { SmartLoading } from '/@/components/framework/smart-loading';
-  import { manufacturerApi } from '/@/api/business/manufacturer/manufacturer-api';
+  import { machineModelApi } from '/@/api/business/vending/model-api';
   import { smartSentry } from '/@/lib/smart-sentry';
   import _ from 'lodash';
   
@@ -49,10 +52,11 @@
   
   // 默认表单数据
   const formDefault = {
-    manufacturerId: undefined,
-    manufacturerName: undefined,
-    contactPerson: undefined,
-    contactPhone: undefined,
+    modelId: undefined,
+    modelName: undefined,
+    aisleCount: undefined,
+    maxPurchase: undefined,
+    remark: undefined,
   };
   
   // 响应式的表单数据
@@ -60,11 +64,20 @@
   
   // 表单验证规则
   const rules = {
-    manufacturerName: [{ required: true, message: '请输入厂家名称', trigger: 'blur' }],
-    contactPerson: [{ required: true, message: '请输入联系人', trigger: 'blur' }],
-    contactPhone: [
-      { required: true, message: '请输入联系电话', trigger: 'blur' },
-      { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号码', trigger: 'blur' },
+    modelName: [
+      { required: true, message: '请输入型号名称', trigger: 'blur' },
+      { max: 100, message: '型号名称不能超过100个字符', trigger: 'blur' },
+    ],
+    aisleCount: [
+      { required: true, message: '请输入货道数量', trigger: 'blur' },
+      { type: 'number', min: 1, max: 100, message: '货道数量必须在1-100之间', trigger: 'blur' },
+    ],
+    maxPurchase: [
+      { required: true, message: '请输入单次最大限购数量', trigger: 'blur' },
+      { type: 'number', min: 1, max: 100, message: '单次最大限购数量必须在1-100之间', trigger: 'blur' },
+    ],
+    remark: [
+      { max: 255, message: '备注不能超过255个字符', trigger: 'blur' },
     ],
   };
   
@@ -101,13 +114,13 @@
       .then(async () => {
         SmartLoading.show();
         try {
-          // 根据是否存在manufacturerId判断是更新还是添加
-          if (form.manufacturerId) {
-            await manufacturerApi.updateManufacturer(form);
+          // 根据是否存在modelId判断是更新还是添加
+          if (form.modelId) {
+            await machineModelApi.updateMachineModel(form);
           } else {
-            await manufacturerApi.addManufacturer(form);
+            await machineModelApi.addMachineModel(form);
           }
-          message.success(`${form.manufacturerId ? '更新' : '添加'}成功`);
+          message.success(`${form.modelId ? '更新' : '添加'}成功`);
           onClose(); // 关闭抽屉
           emit('reloadList'); // 通知父组件刷新列表
         } catch (error) {

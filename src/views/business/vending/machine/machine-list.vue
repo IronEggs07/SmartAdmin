@@ -178,15 +178,15 @@ const columns = ref([
     title: '状态',
     dataIndex: 'machineStatus',
     width: 100,
-    filterOptions: {
-      key: 'machineStatus',
-      filterOptions: computed(() => 
-        statusOptions.map(item => ({
-          text: item.desc,
-          value: item.value,
-        }))
-      ),
-    },
+    // filterOptions: {
+    //   key: 'machineStatus',
+    //   filterOptions: computed(() => 
+    //     statusOptions.value.map(item => ({
+    //       text: item.desc,
+    //       value: item.value,
+    //     }))
+    //   ),
+    // },
   },
   {
     title: '创建时间',
@@ -397,7 +397,7 @@ function confirmBatchDelete() {
 async function batchDelete() {
   try {
     SmartLoading.show();
-    await machineApi.batchDeleteMachine(selectedRowKeyList.value);
+    await machineApi.batchDelete(selectedRowKeyList.value);
     message.success('批量删除成功');
     selectedRowKeyList.value = [];
     queryData();
@@ -416,18 +416,19 @@ onMounted(() => {
 
 // 获取状态描述
 function getStatusDesc(status) {
-  return MACHINE_STATUS_ENUM[status]?.desc || '未知';
+  const statusItem = Object.values(MACHINE_STATUS_ENUM).find(item => item.value === status);
+  return statusItem?.desc || '未知';
 }
 
-// // 获取状态颜色
-// function getStatusColor(status) {
-//   const statusColorMap = {
-//     [MACHINE_STATUS_ENUM.NORMAL.value]: 'green',
-//     [MACHINE_STATUS_ENUM.FAULT.value]: 'orange',
-//     [MACHINE_STATUS_ENUM.OFFLINE.value]: 'red',
-//   };
-//   return statusColorMap[status] || 'default';
-// }
+// 获取状态颜色
+function getStatusColor(status) {
+  const statusColorMap = {
+    [MACHINE_STATUS_ENUM.NORMAL.value]: 'green',
+    [MACHINE_STATUS_ENUM.FAULT.value]: 'orange',
+    [MACHINE_STATUS_ENUM.OFFLINE.value]: 'red',
+  };
+  return statusColorMap[status] || 'default';
+}
 </script>
 
 <style scoped>

@@ -44,7 +44,7 @@
   import { ref, reactive, nextTick } from 'vue';
   import { message } from 'ant-design-vue';
   import { SmartLoading } from '/@/components/framework/smart-loading';
-  import { machineApi } from '../../../../../api/business/vending/machine-api';
+  import { machineApi } from '/@/api/business/vending/machine-api';
   import { MACHINE_STATUS_ENUM } from '/@/constants/business/vending/machine-const';
   import { smartSentry } from '/@/lib/smart-sentry';
   import _ from 'lodash';
