@@ -194,15 +194,15 @@ const columns = ref([
   {
     title: 'ID',
     dataIndex: 'goodsId',
-    width: 80,
+    width: 60,
   },
   {
     title: '商品图片',
     dataIndex: 'goodsImage',
     width: 100,
-    customRender: ({ text }) => {
-      return text ? <a-image width={40} height={40} src={text} /> : '-';
-    },
+    // customRender: ({ text }) => {
+    //   return text ? <a-image width={40} height={40} src={text} /> : '-';
+    // },
   },
   {
     title: '分类',
@@ -260,15 +260,15 @@ const columns = ref([
   {
     title: '备注',
     dataIndex: 'remark',
-    ellipsis: true,
+    ellipsis: true, //
     resizable: true,
     width: 100,
   },
-  {
-    title: '创建时间',
-    dataIndex: 'createTime',
-    width: 150,
-  },
+  // {
+  //   title: '创建时间',
+  //   dataIndex: 'createTime',
+  //   width: 150,
+  // },
   {
     title: '更新时间',
     dataIndex: 'updateTime',

@@ -16,5 +16,3 @@ export const MACHINE_STATUS_ENUM = {
 export default {
     MACHINE_STATUS_ENUM,
 };
-// // 添加机器图片上传地址
-// export const GOODS_IMAGE_UPLOAD_URL = '/api/goods/upload-image';

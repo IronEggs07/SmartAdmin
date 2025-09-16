@@ -6,6 +6,8 @@
  * @LastEditors: zhuoda
  */
 
+import { Model } from "echarts";
+
 //system系统功能表格初始化id
 let systemInitTableId = 10000;
 
@@ -16,6 +18,8 @@ let supportInitTableId = 20000;
 let businessOAInitTableId = 30000;
 
 let businessERPInitTableId = 40000;
+
+let businessVENDINGInitTableId = 50000;
 
 export const TABLE_ID_CONST = {
   /**
@@ -31,6 +35,12 @@ export const TABLE_ID_CONST = {
     },
     ERP: {
       GOODS: businessERPInitTableId + 1, //商品管理
+    },
+    VENDING: {
+      MACHINE: businessVENDINGInitTableId + 10, //货机管理
+      AISLE: businessVENDINGInitTableId + 11, //货道管理
+      GROUP: businessVENDINGInitTableId + 12, //机器组管理
+      MODEL: businessVENDINGInitTableId + 13, //机器型号管理
     },
   },
 
