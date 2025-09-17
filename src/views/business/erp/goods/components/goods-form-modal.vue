@@ -31,22 +31,25 @@
         </a-radio-group>
       </a-form-item>
       <a-form-item label="商品价格" name="price">
-        <a-input-number 
-          style="width: 100%" 
-          placeholder="请输入商品价格" 
-          v-model:value="form.price" 
-          :min="0" 
-          :max="99999999.99"
-          :precision="2"
-          :step="0.01"
-          :formatter="value => `¥ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')"
-          :parser="value => value.replace(/¥\s?|(,*)/g, '')"
-        />
+        <a-input-number style="width: 100%" placeholder="请输入商品价格" v-model:value="form.price" :min="0" :max="99999999.99"
+          :precision="2" :step="0.01" :formatter="value => `¥ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')"
+          :parser="value => value.replace(/¥\s?|(,*)/g, '')" />
       </a-form-item>
       <a-form-item label="商品图片" name="goodsImage">
-        <a-input v-model:value="form.goodsImage" placeholder="请输入图片URL" />
-        <div v-if="form.goodsImage" style="margin-top: 8px;">
-          <a-image :width="100" :src="form.goodsImage" :fallback="'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHN0eWxlPSJmaWxsOiNmNWY1ZjU7c3Ryb2tlOiNkZGQ7c3Ryb2tlLXdpZHRoOjFweDsiLz4KICA8dGV4dCB4PSIzMCIgeT0iMzIiIGZvbnQtZmFtaWx5PSJBcmlhbCxzYW5zLXNlcmlmIiBmb250LXNpemU9IjEwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBhbGlnbm1lbnQtYmFzZWxpbmU9Im1pZGRsZSIgZmlsbD0iIzk5OSI+6K+36L6T5YWlPC90ZXh0Pgo8L3N2Zz4='" />
+        <a-upload v-model:file-list="fileList" name="file" list-type="picture-card" class="goods-uploader"
+          :show-upload-list="false" :before-upload="beforeUpload" :customRequest="handleUpload">
+          <div v-if="form.goodsImage">
+            <img :src="form.goodsImage" alt="商品图片" style="width: 100%; max-height: 100%; object-fit: contain;" />
+          </div>
+          <div v-else>
+            <div style="margin-top: 8px">
+              <plus-outlined />
+              <div class="ant-upload-text">上传图片</div>
+            </div>
+          </div>
+        </a-upload>
+        <div class="upload-tip" v-if="!form.goodsImage">
+          支持 JPG/PNG 格式，大小不超过 2MB
         </div>
       </a-form-item>
       <a-form-item label="备注" name="remark">
@@ -79,10 +82,11 @@
 </template>
 <script setup>
 import { ref, reactive, nextTick } from 'vue';
-import { message, Modal } from 'ant-design-vue';
+import { message, Modal, Upload } from 'ant-design-vue';
 import dayjs from 'dayjs';
 import { SmartLoading } from '/@/components/framework/smart-loading';
 import { goodsApi } from '/@/api/business/goods/goods-api';
+import { fileApi } from '/@/api/support/file-api';
 import { smartSentry } from '/@/lib/smart-sentry';
 import _ from 'lodash';
 import CategoryTree from '/@/components/business/category-tree-select/index.vue';
@@ -91,12 +95,14 @@ import { GOODS_STATUS_ENUM } from '/@/constants/business/erp/goods-const';
 import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
 import DictSelect from '/@/components/support/dict-select/index.vue';
 import { DICT_CODE_ENUM } from '/@/constants/support/dict-const';
+import { PlusOutlined } from '@ant-design/icons-vue';
 
 // emit
 const emit = defineEmits(['reloadList']);
 
 // 组件ref
 const formRef = ref();
+const fileList = ref([]);
 
 const formDefault = {
   // 商品ID
@@ -136,7 +142,7 @@ const rules = {
   goodsStatus: [{ required: true, message: '商品状态不能为空' }],
   place: [
     { required: true, message: '产地不能为空' },
-    { 
+    {
       validator: (_, value) => {
         if (value && value.length > 255) {
           return Promise.reject('产地不能超过255个字符');
@@ -147,15 +153,15 @@ const rules = {
   ],
   price: [
     { required: true, message: '商品价格不能为空' },
-    { 
-      type: 'number', 
-      min: 0, 
+    {
+      type: 'number',
+      min: 0,
       max: 99999999.99,
       message: '价格必须为0-99999999.99之间的数字'
     }
   ],
   goodsImage: [
-    { max: 255, message: '图片地址不能超过255个字符' }
+    { required: true, message: '商品图片不能为空' }
   ],
   remark: [
     { max: 255, message: '备注不能超过255个字符' }
@@ -165,20 +171,6 @@ const rules = {
 // 是否展示抽屉
 const visible = ref(false);
 
-function showDrawer(rowData) {
-  Object.assign(form, formDefault);
-  if (rowData && !_.isEmpty(rowData)) {
-    Object.assign(form, rowData);
-  }
-  if (form.place && form.place.length > 0) {
-    form.place = form.place.split(',');
-  }
-
-  visible.value = true;
-  nextTick(() => {
-    formRef.value?.clearValidate();
-  });
-}
 
 function onClose() {
   Object.assign(form, formDefault);
@@ -219,4 +211,98 @@ function onSubmit() {
 defineExpose({
   showDrawer,
 });
+
+// 上传前的校验
+const beforeUpload = (file) => {
+  const isImage = file.type === 'image/jpeg' || file.type === 'image/png';
+  if (!isImage) {
+    message.error('只能上传 JPG/PNG 格式的图片!');
+    return Upload.LIST_IGNORE;
+  }
+  const isLt2M = file.size / 1024 / 1024 < 2;
+  if (!isLt2M) {
+    message.error('图片大小不能超过 2MB!');
+    return Upload.LIST_IGNORE;
+  }
+  return true;
+};
+
+// 自定义上传处理
+const handleUpload = async ({ file, onSuccess, onError }) => {
+  try {
+    SmartLoading.show('正在上传图片...');
+    const formData = new FormData();
+    formData.append('file', file);
+
+    // 调用后端文件上传接口，指定文件夹为 goods
+    const result = await fileApi.uploadFile(formData, 'goods');
+    
+    // 根据实际返回结构调整
+    if (result && result.data) {
+      // 尝试不同的可能返回字段
+      const imageUrl = result.data.url || result.data.fileUrl || (result.data.data && result.data.data.url);
+      if (imageUrl) {
+        form.goodsImage = imageUrl;
+        onSuccess();
+        message.success('上传成功');
+        return;
+      }
+    }
+    throw new Error('上传失败：无效的响应格式');
+  } catch (error) {
+    console.error('上传失败:', error);
+    let errorMessage = '上传失败';
+    if (error.response) {
+      // 服务器返回了错误响应
+      errorMessage = error.response.data?.message || error.response.statusText || errorMessage;
+    } else if (error.request) {
+      // 请求已发送但未收到响应
+      errorMessage = '无法连接到服务器，请检查网络连接';
+    }
+    message.error(errorMessage);
+    onError(errorMessage);
+  } finally {
+    SmartLoading.hide();
+  }
+};
+
+// 修改 showDrawer 方法，在编辑时初始化图片
+function showDrawer(rowData) {
+  Object.assign(form, formDefault);
+  if (rowData && !_.isEmpty(rowData)) {
+    Object.assign(form, rowData);
+    // 初始化文件列表
+    if (rowData.goodsImage) {
+      fileList.value = [{
+        uid: '-1',
+        name: '商品图片',
+        status: 'done',
+        url: rowData.goodsImage
+      }];
+    }
+  }
+  if (form.place && form.place.length > 0) {
+    form.place = form.place.split(',');
+  }
+
+  visible.value = true;
+  nextTick(() => {
+    formRef.value?.clearValidate();
+  });
+}
 </script>
+<style scoped>
+.goods-uploader :deep(.ant-upload) {
+  width: 100px;
+  height: 100px;
+  margin: 0 auto;
+  display: block;
+}
+
+.upload-tip {
+  color: #999;
+  font-size: 12px;
+  text-align: center;
+  margin-top: 8px;
+}
+</style>

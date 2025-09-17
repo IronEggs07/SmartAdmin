@@ -124,13 +124,13 @@
     // ---------------------------- 表格列 ----------------------------
   
     const columns = ref([
-      {
-        title: '序号',
-        dataIndex: 'id',
-        width: 80,
-        resizable: true,
-        align: 'center',
-      },
+      // {
+      //   title: '序号',
+      //   dataIndex: 'id',
+      //   width: 80,
+      //   resizable: true,
+      //   align: 'center',
+      // },
       {
         title: '厂家名称',
         dataIndex: 'manufacturerName',

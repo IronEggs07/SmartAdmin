@@ -9,14 +9,14 @@
         <a-input style="width: 200px" v-model:value="queryForm.groupName" placeholder="请输入组名称" @pressEnter="onSearch" />
       </a-form-item>
 
-      <a-form-item label="负责人" class="smart-query-form-item">
+      <!-- <a-form-item label="负责人" class="smart-query-form-item">
         <a-input-search style="width: 200px" v-model:value="queryForm.managerName" placeholder="请选择负责人" readOnly
           @search="showManagerSelect">
           <template #enterButton>
             <a-button>选择</a-button>
           </template>
         </a-input-search>
-      </a-form-item>
+      </a-form-item> -->
 
       <a-form-item class="smart-query-form-item">
         <a-button-group>
@@ -43,15 +43,9 @@
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
         <a-button @click="addGroup" type="primary">
-          <template #icon>
-            <PlusOutlined />
-          </template>
           新建
         </a-button>
         <a-button @click="confirmBatchDelete" danger :disabled="selectedRowKeyList.length === 0">
-          <template #icon>
-            <DeleteOutlined />
-          </template>
           批量删除
         </a-button>
       </div>
@@ -70,10 +64,6 @@
             <a-button @click="deleteGroup(record)" danger type="link">删除</a-button>
           </div>
         </template>
-        <template v-else-if="column.dataIndex === 'machine_count'">
-          <!-- 关联机器数量（暂不实现） -->
-          <span>--</span>
-        </template>
       </template>
     </a-table>
 
@@ -87,20 +77,21 @@
     <GroupFormModal ref="formModal" @reloadList="queryData" />
 
     <!-- 负责人选择弹窗 -->
-    <UserSelectModal v-if="managerSelectVisible" :visible="managerSelectVisible" @ok="handleManagerSelect"
-      @cancel="managerSelectVisible = false" />
+    <!-- <UserSelectModal v-if="managerSelectVisible" :visible="managerSelectVisible" @ok="handleManagerSelect"
+      @cancel="managerSelectVisible = false" /> -->
   </a-card>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, onMounted,computed } from 'vue';
 import { message, Modal } from 'ant-design-vue';
 import { SmartLoading } from '/@/components/framework/smart-loading';
 import { machineGroupApi } from '/@/api/business/vending/group-api';
 import GroupFormModal from './components/group-form-modal.vue';
-import UserSelectModal from './components/user-select-modal.vue';
+// import UserSelectModal from './components/user-select-modal.vue';
 import { PAGE_SIZE_OPTIONS } from '/@/constants/common-const';
-import { SearchOutlined, ReloadOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons-vue';
+import { GROUP_STATUS_ENUM } from '/@/constants/business/vending/group-const';
+// import { SearchOutlined, ReloadOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons-vue';  
 
 // 表格列配置
 const columns = [
@@ -130,9 +121,14 @@ const columns = [
     ellipsis: true,
   },
   {
+    title: '创建时间',
+    dataIndex: 'create_time',
+    width: 150,
+  },
+  {
     title: '更新时间',
     dataIndex: 'update_time',
-    width: 180,
+    width: 150,
   },
   {
     title: '操作',
@@ -270,21 +266,21 @@ function onSelectChange(selectedRowKeys) {
 }
 
 // 显示负责人选择弹窗
-function showManagerSelect() {
-  managerSelectVisible.value = true;
-}
+// function showManagerSelect() {
+//   managerSelectVisible.value = true;
+// }
 
 // 处理负责人选择
-function handleManagerSelect(user) {
-  if (user) {
-    queryForm.managerId = user.userId;
-    queryForm.managerName = user.userName;
-  } else {
-    queryForm.managerId = undefined;
-    queryForm.managerName = '';
-  }
-  managerSelectVisible.value = false;
-}
+// function handleManagerSelect(user) {
+//   if (user) {
+//     queryForm.managerId = user.userId;
+//     queryForm.managerName = user.userName;
+//   } else {
+//     queryForm.managerId = undefined;
+//     queryForm.managerName = '';
+//   }
+//   managerSelectVisible.value = false;
+// }
 
 // 动态表格高度
 const yHeight = ref(0);

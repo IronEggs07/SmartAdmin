@@ -98,10 +98,8 @@
       bordered :pagination="false" :showSorterTooltip="false"
       :row-selection="{ selectedRowKeys: selectedRowKeyList, onChange: onSelectChange }" @change="onChange"
       @resizeColumn="handleResizeColumn">
-      <template #headerCell="{ column }">
-        <SmartHeaderCell v-model:value="queryForm[column.filterOptions?.key || column.dataIndex]" :column="column"
-          @change="queryData" />
-      </template>
+      ="queryData" />
+
       <template #bodyCell="{ text, record, column }">
         <template v-if="column.dataIndex === 'goodsName'">
           {{ text }}
@@ -169,8 +167,8 @@
 </template>
 <script setup>
 import GoodsFormModal from './components/goods-form-modal.vue';
-import { onMounted, reactive, ref } from 'vue';
-import { message, Modal } from 'ant-design-vue';
+import { onMounted, reactive, ref, h } from 'vue';
+import { message, Modal, Image } from 'ant-design-vue';
 import { SmartLoading } from '/@/components/framework/smart-loading';
 import { goodsApi } from '/@/api/business/goods/goods-api';
 import { PAGE_SIZE_OPTIONS } from '/@/constants/common-const';
@@ -181,28 +179,27 @@ import TableOperator from '/@/components/support/table-operator/index.vue';
 import { TABLE_ID_CONST } from '/@/constants/support/table-id-const';
 import DictSelect from '/@/components/support/dict-select/index.vue';
 import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
-import { GOODS_STATUS_ENUM } from '/@/constants/business/erp/goods-const';
 import _ from 'lodash';
 import SmartHeaderCell from '/@/components/support/table-header-cell/index.vue';
 import { DICT_CODE_ENUM } from '/@/constants/support/dict-const.js';
 import DictLabel from '/@/components/support/dict-label/index.vue';
-import dayjs from 'dayjs';
 
 // ---------------------------- 表格列 ----------------------------
 
 const columns = ref([
-  {
-    title: 'ID',
-    dataIndex: 'goodsId',
-    width: 60,
-  },
+  // {
+  //   title: 'ID',
+  //   dataIndex: 'goodsId',
+  //   width: 60,
+  // },
   {
     title: '商品图片',
     dataIndex: 'goodsImage',
     width: 100,
-    // customRender: ({ text }) => {
-    //   return text ? <a-image width={40} height={40} src={text} /> : '-';
-    // },
+    customRender: ({ text }) => {
+
+      return text ? h(Image, { width: 60, height: 60, src: text }) : '无商品图片';
+    },
   },
   {
     title: '分类',
@@ -213,7 +210,7 @@ const columns = ref([
       key: 'categoryId',
       categoryType: CATEGORY_TYPE_ENUM.GOODS.value,
     },
-    width: 100,
+    width: 150,
   },
   {
     title: '名称',
@@ -222,7 +219,8 @@ const columns = ref([
     filterOptions: {
       type: 'input',
       key: 'searchWord',
-    }
+    },
+    width: 120
   },
   {
     title: '产地',
@@ -232,14 +230,14 @@ const columns = ref([
       type: 'dict-select',
       dictCode: DICT_CODE_ENUM.GOODS_PLACE || 'GOODS_PLACE',
     },
-    width: 120,
+    width: 100,
   },
   {
     title: '价格',
     dataIndex: 'price',
     resizable: true,
     sorter: true,
-    width: 100,
+    width: 80,
   },
   {
     title: '状态',
@@ -249,7 +247,7 @@ const columns = ref([
       type: 'enum-select',
       enumName: 'GOODS_STATUS_ENUM',
     },
-    width: 120,
+    width: 100,
   },
   {
     title: '上架状态',
@@ -264,11 +262,11 @@ const columns = ref([
     resizable: true,
     width: 100,
   },
-  // {
-  //   title: '创建时间',
-  //   dataIndex: 'createTime',
-  //   width: 150,
-  // },
+  {
+    title: '创建时间',
+    dataIndex: 'createTime',
+    width: 150,
+  },
   {
     title: '更新时间',
     dataIndex: 'updateTime',

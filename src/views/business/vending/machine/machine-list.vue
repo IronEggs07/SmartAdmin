@@ -11,24 +11,31 @@
   <!---------- 查询表单form begin ----------->
   <a-form class="smart-query-form">
     <a-row class="smart-query-form-row" v-privilege="'machine:query'">
+      <!-- 模糊查询：机器名称 -->
       <a-form-item label="机器名称" class="smart-query-form-item">
-        <a-input style="width: 200px" v-model:value="queryForm.machineName" placeholder="请输入机器名称" @pressEnter="onSearch" />
+        <a-input style="width: 200px" v-model:value="queryForm.machineName" placeholder="请输入机器名称" allow-clear
+          @pressEnter="onSearch" />
       </a-form-item>
 
+      <!-- 精确查询：机器编码 -->
       <a-form-item label="机器编码" class="smart-query-form-item">
-        <a-input style="width: 150px" v-model:value="queryForm.machineCode" placeholder="请输入机器编码" @pressEnter="onSearch" />
+        <a-input style="width: 200px" v-model:value="queryForm.machineCode" placeholder="请输入机器编码" allow-clear
+          @pressEnter="onSearch" />
       </a-form-item>
 
+      <!-- 状态筛选 -->
       <a-form-item label="机器状态" class="smart-query-form-item">
-        <a-select style="width: 150px" v-model:value="queryForm.machineStatus" placeholder="请选择状态" allowClear @change="onSearch">
+        <a-select style="width: 150px" v-model:value="queryForm.machineStatus" placeholder="全部状态" allowClear
+          @change="onSearch">
           <a-select-option v-for="status in statusOptions" :key="status.value" :value="status.value">
             {{ status.desc }}
           </a-select-option>
         </a-select>
       </a-form-item>
 
+      <!-- 操作按钮 -->
       <a-form-item class="smart-query-form-item">
-        <a-button-group>
+        <a-space>
           <a-button type="primary" @click="onSearch" v-privilege="'machine:query'">
             <template #icon>
               <SearchOutlined />
@@ -37,11 +44,11 @@
           </a-button>
           <a-button @click="resetQuery" v-privilege="'machine:query'">
             <template #icon>
-              <ReloadOutlined />
+              <SyncOutlined />
             </template>
             重置
           </a-button>
-        </a-button-group>
+        </a-space>
       </a-form-item>
     </a-row>
   </a-form>
@@ -58,47 +65,48 @@
           新建
         </a-button>
 
-        <a-button @click="confirmBatchDelete" danger :disabled="selectedRowKeyList.length === 0" v-privilege="'machine:batchDelete'">
+        <a-button @click="confirmBatchDelete" danger :disabled="selectedRowKeyList.length === 0"
+          v-privilege="'machine:batchDelete'">
           <template #icon>
             <DeleteOutlined />
           </template>
           批量删除
         </a-button>
       </div>
-      <div class="smart-table-setting-block">
-        <TableOperator v-model="columns" :tableId="TABLE_ID_CONST.BUSINESS.VENDING.MACHINE" :refresh="queryData" />
-      </div>
     </a-row>
     <!---------- 表格操作行 end ----------->
 
-    <a-table 
-      size="small" 
-      :dataSource="tableData" 
-      :columns="columns" 
-      rowKey="machineId"
-      :scroll="{ x: 1200, y: yHeight }" 
-      bordered 
-      :pagination="false" 
-      :loading="tableLoading" 
-      :showSorterTooltip="false"
-      :row-selection="{ selectedRowKeys: selectedRowKeyList, onChange: onSelectChange }" 
-      @change="onChange"
-      @resizeColumn="handleResizeColumn"
-    >
-      <template #headerCell="{ column }">
-        <SmartHeaderCell 
-          v-model:value="queryForm[column.filterOptions?.key || column.dataIndex]" 
-          :column="column" 
-          @change="queryData" 
-        />
-      </template>
+    <a-table size="small" :dataSource="tableData" :columns="columns" rowKey="machineId"
+      :scroll="{ x: 1200, y: yHeight }" bordered :pagination="false" :loading="tableLoading" :showSorterTooltip="false"
+      :row-selection="{ selectedRowKeys: selectedRowKeyList, onChange: onSelectChange }" @change="onChange"
+      @resizeColumn="handleResizeColumn">
+
 
       <template #bodyCell="{ record, column }">
-        <!-- 状态列 -->
-        <template v-if="column.dataIndex === 'machineStatus'">
-          <a-tag :color="getStatusColor(record.machineStatus)">
-            {{ getStatusDesc(record.machineStatus) }}
-          </a-tag>
+        <!-- 机器编码 -->
+        <template v-if="column.dataIndex === 'machineCode'">
+          {{ record.machineCode || '-' }}
+        </template>
+
+        <!-- 机器名称 -->
+        <template v-else-if="column.dataIndex === 'machineName'">
+          {{ record.machineName || '-' }}
+        </template>
+
+        <!-- 机器地址 -->
+        <template v-else-if="column.dataIndex === 'machineAddress'">
+          <a-tooltip :title="record.machineAddress" placement="topLeft">
+            <div class="text-ellipsis" style="max-width: 200px">
+              {{ record.machineAddress || '-' }}
+            </div>
+          </a-tooltip>
+        </template>
+
+        <!-- 机器状态 -->
+        <template v-else-if="column.dataIndex === 'machineStatus'">
+
+          {{ getStatusDesc(record.machineStatus) }}
+
         </template>
 
         <!-- 操作列 -->
@@ -112,24 +120,15 @@
     </a-table>
 
     <div class="smart-query-table-page">
-      <a-pagination 
-        showSizeChanger 
-        showQuickJumper 
-        show-less-items 
-        :pageSizeOptions="PAGE_SIZE_OPTIONS"
-        :defaultPageSize="queryForm.pageSize" 
-        v-model:current="queryForm.pageNum" 
-        v-model:pageSize="queryForm.pageSize"
-        :total="total" 
-        @change="queryData" 
-        @showSizeChange="queryData" 
-        :show-total="(total) => `共${total}条`" 
-      />
+      <a-pagination showSizeChanger showQuickJumper show-less-items :pageSizeOptions="PAGE_SIZE_OPTIONS"
+        :defaultPageSize="queryForm.pageSize" v-model:current="queryForm.pageNum" v-model:pageSize="queryForm.pageSize"
+        :total="total" @change="queryData" @showSizeChange="queryData" :show-total="(total) => `共${total}条`" />
     </div>
   </a-card>
 
   <!-- 表单弹窗 -->
   <MachineFormModal ref="formModal" @reloadList="queryData" />
+  <!-- <MachineAisle ></MachineAisle>> -->
 </template>
 
 <script setup>
@@ -140,12 +139,9 @@ import { message, Modal } from 'ant-design-vue';
 import { machineApi } from '/@/api/business/vending/machine-api';
 import { SmartLoading } from '/@/components/framework/smart-loading';
 import { PAGE_SIZE_OPTIONS } from '/@/constants/common-const';
-import { smartSentry } from '/@/lib/smart-sentry';
-import { TABLE_ID_CONST } from '/@/constants/support/table-id-const';
+import { smartSentry } from '/@/lib/smart-sentry'
 import _ from 'lodash';
-import SmartHeaderCell from '/@/components/support/table-header-cell/index.vue';
-import TableOperator from '/@/components/support/table-operator/index.vue';
-// import { useTableHeight } from '/@/hooks/use-table-height';
+
 
 // 表格列定义
 const columns = ref([
@@ -154,57 +150,54 @@ const columns = ref([
     dataIndex: 'machineCode',
     width: 100,
     fixed: 'left',
-    filterOptions: {
-      key: 'machineCode',
-    },
+    resizable: true,//
+    required: true,
   },
   {
     title: '机器名称',
     dataIndex: 'machineName',
     resizable: true,
     width: 100,
-    filterOptions: {
-      type: 'input',
-      key: 'machineName',
-    },
+    required: true,
   },
   {
     title: '机器地址',
     dataIndex: 'machineAddress',
     width: 200,
+    resizable: true,
     ellipsis: true,
+    required: true,
   },
   {
     title: '状态',
     dataIndex: 'machineStatus',
     width: 100,
-    // filterOptions: {
-    //   key: 'machineStatus',
-    //   filterOptions: computed(() => 
-    //     statusOptions.value.map(item => ({
-    //       text: item.desc,
-    //       value: item.value,
-    //     }))
-    //   ),
-    // },
+    align: 'center',
+    required: true,
   },
   {
     title: '创建时间',
     dataIndex: 'createTime',
     width: 170,
+    align: 'center',
     sorter: true,
+    defaultSortOrder: 'descend',
+    required: true,
   },
   {
     title: '更新时间',
     dataIndex: 'updateTime',
     width: 170,
+    align: 'center',
     sorter: true,
+    required: true,
   },
   {
     title: '操作',
     dataIndex: 'action',
-    width: 120,
+    width: 150,
     fixed: 'right',
+    align: 'center',
   },
 ]);
 
@@ -265,7 +258,7 @@ async function queryData() {
   try {
     tableLoading.value = true;
     const params = { ...queryForm };
-    
+
     // 处理排序
     if (params.sortField) {
       params.sortField = _.camelCase(params.sortField);
@@ -334,6 +327,7 @@ function handleResizeColumn(w, col) {
  */
 function addMachine(record) {
   formModal.value.showDrawer(record);
+  console.log(record);
 }
 
 // ---------------------------- 删除 ----------------------------
@@ -418,16 +412,6 @@ onMounted(() => {
 function getStatusDesc(status) {
   const statusItem = Object.values(MACHINE_STATUS_ENUM).find(item => item.value === status);
   return statusItem?.desc || '未知';
-}
-
-// 获取状态颜色
-function getStatusColor(status) {
-  const statusColorMap = {
-    [MACHINE_STATUS_ENUM.NORMAL.value]: 'green',
-    [MACHINE_STATUS_ENUM.FAULT.value]: 'orange',
-    [MACHINE_STATUS_ENUM.OFFLINE.value]: 'red',
-  };
-  return statusColorMap[status] || 'default';
 }
 </script>
 

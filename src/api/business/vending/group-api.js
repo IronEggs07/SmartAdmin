@@ -6,23 +6,23 @@ import { postRequest, getRequest, getDownload } from '/@/lib/axios';
 
 export const machineGroupApi = {
   queryMachineGroupList: (param) => {
-    return postRequest('/group/query', param);
+    return postRequest('/vending/group/query', param);
   },
 
   addMachineGroup: (param) => {
-    return postRequest('/group/add', param);
+    return postRequest('/vending/group/add', param);
   },
 
   updateMachineGroup: (param) => {
-    return postRequest('/group/update', param);
+    return postRequest('/vending/group/update', param);
   },
 
   deleteMachineGroup: (groupId) => {
-    return getRequest(`/group/delete/${groupId}`);
+    return getRequest(`/vending/group/delete/${groupId}`);
   },
 
   batchDelete: (groupIdList) => {
-    return postRequest('/group/batchDelete', groupIdList);
+    return postRequest('/vending/group/batchDelete', groupIdList);
   },
 
 

@@ -71,7 +71,6 @@ import { ref, reactive, watch } from 'vue';
 import { message } from 'ant-design-vue';
 import { SmartLoading } from '/@/components/framework/smart-loading';
 import { machineGroupApi } from '/@/api/business/vending/group-api';
-import { userApi } from '/@/api/system/user-api';
 
 const props = defineProps({
     // 是否显示弹窗

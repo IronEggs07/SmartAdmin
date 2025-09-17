@@ -6,39 +6,39 @@ import { postRequest, getRequest, getDownload } from '/@/lib/axios';
 export const machineApi = {
 
   queryMachineList: (param) => {
-    return postRequest('/machine/query', param);
+    return postRequest('/vending/machine/query', param);
   },
 
 
   addMachine: (param) => {
-    return postRequest('/machine/add', param);
+    return postRequest('/vending/machine/add', param);
   },
 
 
   updateMachine: (param) => {
-    return postRequest('/machine/update', param);
+    return postRequest('/vending/machine/update', param);
   },
 
 
   deleteMachine: (machineId) => {
-    return getRequest(`/machine/delete/${machineId}`);
+    return getRequest(`/vending/machine/delete/${machineId}`);
   },
 
 
   batchDelete: (machineIdList) => {
-    return postRequest('/machine/batchDelete', machineIdList);
+    return postRequest('/vending/machine/batchDelete', machineIdList);
   },
 
 
   exportMachine: () => {
-    return getDownload('/machine/export');
+    return getDownload('/vending/machine/export');
   },
 
 
   importMachine: (file) => {
     const formData = new FormData();
     formData.append('file', file);
-    return postRequest('/machine/import', formData, {
+    return postRequest('/vending/machine/import', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }

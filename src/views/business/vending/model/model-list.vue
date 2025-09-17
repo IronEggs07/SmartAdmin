@@ -47,9 +47,6 @@
             批量删除
           </a-button>
         </div>
-        <div class="smart-table-setting-block">
-          <TableOperator v-model="columns" :tableId="TABLE_ID_CONST.BUSINESS.ERP.MODEL" :refresh="queryData" />
-        </div>
       </a-row>
       <!---------- 表格操作行 end ----------->
       <a-table
@@ -66,9 +63,6 @@
         @change="onChange"
         @resizeColumn="handleResizeColumn"
       >
-        <template #headerCell="{ column }">
-          <SmartHeaderCell v-model:value="queryForm[column.filterOptions?.key || column.dataIndex]" :column="column" @change="queryData" />
-        </template>
 
         <template #bodyCell="{ record, column }">
           <template v-if="column.dataIndex === 'action'">
@@ -108,10 +102,8 @@
     import { SmartLoading } from '/@/components/framework/smart-loading';
     import { PAGE_SIZE_OPTIONS } from '/@/constants/common-const';
     import { smartSentry } from '/@/lib/smart-sentry';
-    import TableOperator from '/@/components/support/table-operator/index.vue';
-    import { TABLE_ID_CONST } from '/@/constants/support/table-id-const';
     import _ from 'lodash';
-    import SmartHeaderCell from '/@/components/support/table-header-cell/index.vue';
+
 
     // ---------------------------- 表格列 ----------------------------
 
