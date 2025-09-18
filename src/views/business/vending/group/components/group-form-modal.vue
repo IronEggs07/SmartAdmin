@@ -1,53 +1,35 @@
 <template>
-    <a-drawer :title="title" :width="500" :visible="visible" :body-style="{ paddingBottom: '80px' }" @close="onClose"
-        :maskClosable="false">
-        <a-form :model="form" :rules="rules" ref="formRef" layout="vertical">
-            <a-form-item label="组名称" name="group_name">
-                <a-input v-model:value="form.group_name" placeholder="请输入组名称" :maxlength="100" show-word-limit />
+    <a-drawer :title="form.groupId ? '编辑分组' : '新增分组'" :width="500" :open="visible"
+        :body-style="{ paddingBottom: '80px' }" @close="onClose">
+        <a-form ref="formRef" :model="form" :rules="rules" :label-col="{ span: 5 }">
+            <a-form-item label="分组名称" name="groupName">
+                <a-input v-model:value="form.groupName" placeholder="请输入分组名称" allow-clear />
             </a-form-item>
 
-            <a-form-item label="负责人" name="manager_id">
-                <!-- 使用下拉选择框选择负责人 -->
-                <a-select v-model:value="form.manager_id" placeholder="请选择负责人" :options="userOptions"
-                    :loading="userLoading" :filter-option="filterUserOption" show-search allow-clear />
-                <!-- 
-            注意：这里使用了简单的下拉选择框实现
-            实际项目中可以替换为用户选择弹窗组件
-            示例代码：
-            <a-input-search
-              v-model:value="form.manager_name"
-              placeholder="请选择负责人"
-              readOnly
-              @search="showUserSelect"
-            >
-              <template #enterButton>
-                <a-button>选择</a-button>
-              </template>
-</a-input-search>
--->
+    
+
+            <a-form-item label="负责人" name="managerId">
+                <a-input-search v-model:value="form.managerName" placeholder="请选择负责人" readOnly
+                    @search="showManagerSelect">
+                    <template #enterButton>
+                        <a-button>选择</a-button>
+                    </template>
+                </a-input-search>
+            </a-form-item>
+
+            <a-form-item label="状态" name="status">
+                <a-radio-group v-model:value="form.status">
+                    <a-radio v-for="status in statusOptions" :key="status.value" :value="status.value">
+                        {{ status.desc }}
+                    </a-radio>
+                </a-radio-group>
             </a-form-item>
 
             <a-form-item label="备注" name="remark">
-                <a-textarea v-model:value="form.remark" placeholder="请输入备注信息" :rows="4" :maxlength="255"
-                    show-word-limit />
+                <a-textarea v-model:value="form.remark" placeholder="请输入备注信息" :rows="4" :maxlength="200" show-count
+                    allow-clear />
             </a-form-item>
-
-            <!-- 关联机器数量（只读显示） -->
-            <a-form-item label="关联机器数" v-if="form.group_id">
-                <a-input :value="form.machine_count || '0'" disabled />
-            </a-form-item>
-
-            <!-- 创建时间和更新时间（只读显示） -->
-            <template v-if="form.group_id">
-                <a-form-item label="创建时间">
-                    <a-input :value="form.create_time" disabled />
-                </a-form-item>
-                <a-form-item label="更新时间">
-                    <a-input :value="form.update_time" disabled />
-                </a-form-item>
-            </template>
         </a-form>
-
 
         <div :style="{
             position: 'absolute',
@@ -61,185 +43,129 @@
             zIndex: 1,
         }">
             <a-button style="margin-right: 8px" @click="onClose">取消</a-button>
-            <a-button type="primary" @click="handleSubmit" :loading="loading">确定</a-button>
+            <a-button type="primary" @click="onSubmit">提交</a-button>
         </div>
     </a-drawer>
 </template>
 
 <script setup>
-import { ref, reactive, watch } from 'vue';
+import { ref, reactive, onMounted, nextTick } from 'vue';
 import { message } from 'ant-design-vue';
 import { SmartLoading } from '/@/components/framework/smart-loading';
 import { machineGroupApi } from '/@/api/business/vending/group-api';
+import { GROUP_STATUS_ENUM } from '/@/constants/business/vending/group-const';
+import { smartSentry } from '/@/lib/smart-sentry';
+import _ from 'lodash';
 
-const props = defineProps({
-    // 是否显示弹窗
-    visible: {
-        type: Boolean,
-        default: false,
-    },
-    // 编辑时的数据
-    record: {
-        type: Object,
-        default: () => ({}),
-    },
-});
+// 定义emit事件，用于通知父组件刷新列表
+const emit = defineEmits(['reloadList']);
 
-const emit = defineEmits(['update:visible', 'reloadList']);
-
-// 表单引用
+// 表单的ref
 const formRef = ref();
+
+// 状态选项
+const statusOptions = Object.values(GROUP_STATUS_ENUM);
+
 // 加载状态
 const loading = ref(false);
-// 用户选项
-const userOptions = ref([]);
-// 用户加载状态
-const userLoading = ref(false);
 
-// 表单数据
-const form = reactive({
-    group_id: undefined,
-    group_name: '',
-    manager_id: undefined,
-    manager_name: '',
+// 控制抽屉显示/隐藏
+const visible = ref(false);
+
+// 默认表单数据
+const formDefault = {
+    groupId: undefined,
+    groupName: '',
+    managerId: undefined,
+    managerName: '',
+    status: GROUP_STATUS_ENUM.ADMIN.value,
     remark: '',
-    machine_count: 0,
-    create_time: '',
-    update_time: '',
-});
+};
+
+// 响应式的表单数据
+const form = reactive({ ...formDefault });
 
 // 表单验证规则
 const rules = {
-    group_name: [
-        { required: true, message: '请输入组名称', trigger: 'blur' },
-        { max: 100, message: '组名称不能超过100个字符', trigger: 'blur' },
+    groupName: [
+        { required: true, message: '请输入分组名称', trigger: 'blur' },
+        { max: 50, message: '长度不能超过50个字符', trigger: 'blur' }
     ],
-    manager_id: [
-        { required: true, message: '请选择负责人', trigger: 'change' },
+    groupCode: [
+        { required: true, message: '请输入分组编码', trigger: 'blur' },
+        { max: 50, message: '长度不能超过50个字符', trigger: 'blur' }
+    ],
+    managerId: [
+        { required: true, message: '请选择负责人', trigger: 'change' }
+    ],
+    status: [
+        { required: true, message: '请选择状态', trigger: 'change' }
     ],
     remark: [
-        { max: 255, message: '备注不能超过255个字符', trigger: 'blur' },
-    ],
+        { max: 200, message: '长度不能超过200个字符', trigger: 'blur' }
+    ]
 };
 
-// 计算标题
-const title = computed(() => {
-    return form.group_id ? '编辑机器组' : '新增机器组';
-});
-
-// 监听可见性变化
-watch(() => props.visible, (val) => {
-    if (val) {
-        // 重置表单
-        formRef.value?.resetFields();
-
-        // 加载用户列表
-        loadUserList();
-
-        // 如果是编辑模式，设置表单数据
-        if (props.record?.group_id) {
-            Object.assign(form, props.record);
-        } else {
-            // 新增模式，重置表单数据
-            Object.assign(form, {
-                group_id: undefined,
-                group_name: '',
-                manager_id: undefined,
-                manager_name: '',
-                remark: '',
-                machine_count: 0,
-                create_time: '',
-                update_time: '',
-            });
-        }
+// 显示抽屉
+function showDrawer(rowData) {
+    // 重置表单为默认值
+    Object.assign(form, formDefault);
+    // 如果传入了行数据（编辑模式），则用行数据覆盖表单
+    if (rowData && !_.isEmpty(rowData)) {
+        Object.assign(form, rowData);
     }
-});
+    // 打开抽屉
+    visible.value = true;
+    // 使用nextTick确保DOM更新后清除之前的校验信息
+    nextTick(() => {
+        formRef.value?.clearValidate();
+    });
+}
 
-//   // 加载用户列表
-//   async function loadUserList() {
-//     try {
-//       userLoading.value = true;
-//       // 这里调用获取用户列表的API
-//       // const result = await userApi.getUserList({ pageSize: 1000 });
-//       // userOptions.value = result.data.list.map(user => ({
-//       //   value: user.userId,
-//       //   label: user.userName,
-//       // }));
-
-//       // 模拟数据
-//       userOptions.value = [
-//         { value: 1, label: '张三' },
-//         { value: 2, label: '李四' },
-//         { value: 3, label: '王五' },
-//       ];
-//     } catch (error) {
-//       console.error('加载用户列表失败:', error);
-//       message.error('加载用户列表失败');
-//     } finally {
-//       userLoading.value = false;
-//     }
-//   }
-
-// 用户搜索过滤
-// function filterUserOption(input, option) {
-//     return option.label.toLowerCase().indexOf(input.toLowerCase()) >= 0;
-// }
-
-// 关闭弹窗
+// 关闭抽屉
 function onClose() {
-    emit('update:visible', false);
+    visible.value = false;
 }
 
 // 提交表单
-async function handleSubmit() {
-    try {
-        await formRef.value.validate();
-
-        loading.value = true;
-        SmartLoading.show();
-
-        const params = { ...form };
-
-        if (params.group_id) {
-            // 更新
-            await machineGroupApi.updateMachineGroup(params);
-            message.success('更新成功');
-        } else {
-            // 新增
-            await machineGroupApi.addMachineGroup(params);
-            message.success('添加成功');
-        }
-
-        onClose();
-        emit('reloadList');
-    } catch (error) {
-        if (error.errorFields) {
-            // 表单验证错误
-            return;
-        }
-        console.error('保存失败:', error);
-        message.error(error.message || '保存失败');
-    } finally {
-        loading.value = false;
-        SmartLoading.hide();
-    }
+function onSubmit() {
+    formRef.value
+        .validate()
+        .then(async () => {
+            loading.value = true;
+            try {
+                if (form.groupId) {
+                    await machineGroupApi.updateMachineGroup(form.groupId, form);
+                    message.success('更新成功');
+                } else {
+                    await machineGroupApi.addMachineGroup(form);
+                    message.success('添加成功');
+                }
+                onClose();
+                emit('reloadList');
+            } catch (error) {
+                console.error('操作失败:', error);
+                smartSentry.captureError(error);
+                message.error(error.response?.data?.message || '操作失败，请重试');
+            } finally {
+                loading.value = false;
+            }
+        })
+        .catch(() => {
+            message.error('表单验证失败，请检查输入');
+        });
 }
 
-// 暴露方法给父组件调用
+// 显示负责人选择弹窗
+// function showManagerSelect() {
+//     // TODO: 实现负责人选择逻辑
+//     message.info('负责人选择功能待实现');
+// }
+
+// 使用defineExpose暴露方法，让父组件可以通过ref调用
 defineExpose({
-    showDrawer(record) {
-        if (record) {
-            Object.assign(form, record);
-        } else {
-            formRef.value?.resetFields();
-        }
-        emit('update:visible', true);
-    },
+    showDrawer
 });
 </script>
 
-<style scoped>
-:deep(.ant-form-item) {
-    margin-bottom: 16px;
-}
-</style>
+<style scoped></style>

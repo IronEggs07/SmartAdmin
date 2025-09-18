@@ -4,29 +4,29 @@
 <template>
   <!---------- 查询表单form begin ----------->
   <a-form class="smart-query-form">
-    <a-row class="smart-query-form-row">
+    <a-row class="smart-query-form-row" v-privilege="'group:query'">
       <a-form-item label="组名称" class="smart-query-form-item">
         <a-input style="width: 200px" v-model:value="queryForm.groupName" placeholder="请输入组名称" @pressEnter="onSearch" />
       </a-form-item>
 
-      <!-- <a-form-item label="负责人" class="smart-query-form-item">
-        <a-input-search style="width: 200px" v-model:value="queryForm.managerName" placeholder="请选择负责人" readOnly
+      <a-form-item label="负责人" class="smart-query-form-item">
+        <!-- <a-input-search style="width: 200px" v-model:value="queryForm.managerName" placeholder="请选择负责人" readOnly
           @search="showManagerSelect">
           <template #enterButton>
             <a-button>选择</a-button>
           </template>
-        </a-input-search>
-      </a-form-item> -->
+</a-input-search> -->
+      </a-form-item>
 
       <a-form-item class="smart-query-form-item">
         <a-button-group>
-          <a-button type="primary" @click="onSearch">
+          <a-button type="primary" @click="onSearch" v-privilege="'group:query'">
             <template #icon>
               <SearchOutlined />
             </template>
             查询
           </a-button>
-          <a-button @click="resetQuery">
+          <a-button @click="resetQuery" v-privilege="'group:query'">
             <template #icon>
               <ReloadOutlined />
             </template>
@@ -42,17 +42,24 @@
     <!---------- 表格操作行 begin ----------->
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
-        <a-button @click="addGroup" type="primary">
+        <a-button @click="addGroup" type="primary" v-privilege="'group:add'">
+          <template #icon>
+            <PlusOutlined />
+          </template>
           新建
         </a-button>
-        <a-button @click="confirmBatchDelete" danger :disabled="selectedRowKeyList.length === 0">
+        <a-button @click="confirmBatchDelete" danger :disabled="selectedRowKeyList.length === 0"
+          v-privilege="'group:batchDelete'">
+          <template #icon>
+            <DeleteOutlined />
+          </template>
           批量删除
         </a-button>
       </div>
     </a-row>
     <!---------- 表格操作行 end ----------->
 
-    <a-table size="small" :dataSource="tableData" :columns="columns" rowKey="group_id" :scroll="{ x: 1000, y: yHeight }"
+    <a-table size="small" :dataSource="tableData" :columns="columns" rowKey="groupId" :scroll="{ x: 1000, y: yHeight }"
       bordered :pagination="false" :loading="tableLoading" :row-selection="{
         selectedRowKeys: selectedRowKeyList,
         onChange: onSelectChange
@@ -60,8 +67,8 @@
       <template #bodyCell="{ column, record }">
         <template v-if="column.dataIndex === 'action'">
           <div class="smart-table-operate">
-            <a-button @click="editGroup(record)" type="link">编辑</a-button>
-            <a-button @click="deleteGroup(record)" danger type="link">删除</a-button>
+            <a-button @click="editGroup(record)" type="link" v-privilege="'group:update'">编辑</a-button>
+            <a-button @click="deleteGroup(record)" danger type="link" v-privilege="'group:delete'">删除</a-button>
           </div>
         </template>
       </template>
@@ -83,7 +90,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted,computed } from 'vue';
+import { ref, reactive, onMounted, computed } from 'vue';
 import { message, Modal } from 'ant-design-vue';
 import { SmartLoading } from '/@/components/framework/smart-loading';
 import { machineGroupApi } from '/@/api/business/vending/group-api';
@@ -91,30 +98,30 @@ import GroupFormModal from './components/group-form-modal.vue';
 // import UserSelectModal from './components/user-select-modal.vue';
 import { PAGE_SIZE_OPTIONS } from '/@/constants/common-const';
 import { GROUP_STATUS_ENUM } from '/@/constants/business/vending/group-const';
-// import { SearchOutlined, ReloadOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons-vue';  
+import { SearchOutlined, ReloadOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons-vue';
 
 // 表格列配置
 const columns = [
   {
     title: '组ID',
-    dataIndex: 'group_id',
+    dataIndex: 'groupId',
     width: 80,
   },
   {
     title: '组名称',
-    dataIndex: 'group_name',
+    dataIndex: 'groupName',
     width: 150,
   },
   {
     title: '负责人ID',
-    dataIndex: 'manager_id',
+    dataIndex: 'managerId',
     width: 100,
   },
-  {
-    title: '关联机器数',
-    dataIndex: 'machine_count',
-    width: 100,
-  },
+  // {
+  //   title: '关联机器数',
+  //   dataIndex: 'machineCount',
+  //   width: 100,
+  // },
   {
     title: '备注',
     dataIndex: 'remark',
@@ -122,12 +129,12 @@ const columns = [
   },
   {
     title: '创建时间',
-    dataIndex: 'create_time',
+    dataIndex: 'createTime',
     width: 150,
   },
   {
     title: '更新时间',
-    dataIndex: 'update_time',
+    dataIndex: 'updateTime',
     width: 150,
   },
   {
@@ -144,7 +151,6 @@ const queryFormState = {
   pageSize: 10,
   groupName: '',
   managerId: undefined,
-  managerName: '',
   sortItemList: [],
 };
 const queryForm = reactive({ ...queryFormState });
@@ -157,7 +163,7 @@ const selectedRowKeyList = ref([]);
 
 // 弹窗相关
 const formModal = ref();
-const managerSelectVisible = ref(false);
+const managerSelectVisible = ref(false); // 选择管理员弹窗
 
 // 查询数据
 async function queryData() {
@@ -179,6 +185,7 @@ async function queryData() {
     message.error('查询失败');
   } finally {
     tableLoading.value = false;
+    console.log(queryForm);
   }
 }
 
@@ -199,6 +206,7 @@ function resetQuery() {
 // 添加机器组
 function addGroup() {
   formModal.value.showDrawer();
+  console.log('zhengzaitianjia');
 }
 
 // 编辑机器组
@@ -210,13 +218,13 @@ function editGroup(record) {
 function deleteGroup(record) {
   Modal.confirm({
     title: '确认删除',
-    content: `确定要删除【${record.group_name}】吗？`,
+    content: `确定要删除【${record.groupName}】吗？`,
     okText: '删除',
     okType: 'danger',
     onOk: async () => {
       try {
         SmartLoading.show();
-        await machineGroupApi.deleteMachineGroup(record.group_id);
+        await machineGroupApi.deleteMachineGroup(record.groupId);
         message.success('删除成功');
         queryData();
       } catch (error) {
@@ -304,7 +312,6 @@ function resetGetHeight() {
   }, 100);
 }
 
-window.addEventListener('resize', resetGetHeight, { passive: true });
 </script>
 
 <style scoped></style>

@@ -13,7 +13,7 @@
           <a-button-group>
             <a-button type="primary" @click="onSearch" v-privilege="'model:query'">
               <template #icon>
-                <SearchOutlined />
+                <StarOutlined />
               </template>
               查询
             </a-button>
@@ -103,6 +103,7 @@
     import { PAGE_SIZE_OPTIONS } from '/@/constants/common-const';
     import { smartSentry } from '/@/lib/smart-sentry';
     import _ from 'lodash';
+    import { StarOutlined, StarFilled, StarTwoTone } from '@ant-design/icons-vue';
 
 
     // ---------------------------- 表格列 ----------------------------

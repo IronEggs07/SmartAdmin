@@ -104,9 +104,7 @@
 
         <!-- 机器状态 -->
         <template v-else-if="column.dataIndex === 'machineStatus'">
-
           {{ getStatusDesc(record.machineStatus) }}
-
         </template>
 
         <!-- 操作列 -->
@@ -141,6 +139,7 @@ import { SmartLoading } from '/@/components/framework/smart-loading';
 import { PAGE_SIZE_OPTIONS } from '/@/constants/common-const';
 import { smartSentry } from '/@/lib/smart-sentry'
 import _ from 'lodash';
+import { StarOutlined, StarFilled, StarTwoTone } from '@ant-design/icons-vue';
 
 
 // 表格列定义
@@ -159,6 +158,25 @@ const columns = ref([
     resizable: true,
     width: 100,
     required: true,
+  }, {
+    title: '所属分组',
+    dataIndex: 'groupName',
+    width: 120,
+    ellipsis: true,
+    customRender: ({ text }) => text || '-'
+  },
+  {
+    title: '机器型号',
+    dataIndex: 'modelName',
+    width: 150,
+    ellipsis: true
+  },
+  {
+    title: '所属仓库',
+    dataIndex: 'warehouseName',
+    width: 150,
+    ellipsis: true,
+    customRender: ({ text }) => text || '-'
   },
   {
     title: '机器地址',
@@ -211,6 +229,9 @@ const statusOptions = computed(() => Object.values(MACHINE_STATUS_ENUM).map(item
 const queryForm = reactive({
   machineName: undefined,
   machineCode: undefined,
+  groupId: undefined,      // 新增：分组ID
+  modelId: undefined,      // 新增：型号ID
+  warehouseId: undefined,  // 新增：仓库ID
   machineStatus: undefined,
   pageNum: 1,
   pageSize: 10,
@@ -272,7 +293,9 @@ async function queryData() {
     smartSentry.captureError(error);
     message.error('查询失败');
   } finally {
+    console.log(queryForm);
     tableLoading.value = false;
+
   }
 }
 
@@ -291,6 +314,9 @@ function resetQuery() {
   Object.assign(queryForm, {
     machineName: undefined,
     machineCode: undefined,
+    groupId: undefined,
+    modelId: undefined,
+    warehouseId: undefined,
     machineStatus: undefined,
     pageNum: 1,
     sortField: 'createTime',
