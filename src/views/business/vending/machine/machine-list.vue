@@ -69,7 +69,7 @@
     <!---------- 表格操作行 end ----------->
 
     <a-table size="small" :dataSource="tableData" :columns="columns" rowKey="machineId"
-      :scroll="{ x: 1200, y: yHeight }" bordered :pagination="false" :loading="tableLoading" :showSorterTooltip="false"
+      :scroll="{ x: 1200 }" bordered :pagination="false" :loading="tableLoading" :showSorterTooltip="false"
       :row-selection="{
         selectedRowKeys: selectedRowKeyList,
         onChange: onSelectChange

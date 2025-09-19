@@ -98,11 +98,13 @@ const loadAisles = async () => {
 };
 
 
+
 watch(
     () => props.machineId,
     (newMachineId, oldMachineId) => {
         if (newMachineId) {
             loadAisles();
+            console.log('货道列表加载开始');
         }
     },
     { immediate: true } // 3. immediate: true 确保组件首次加载时也会执行，可以替代 onMounted

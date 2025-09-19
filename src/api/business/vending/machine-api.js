@@ -31,7 +31,8 @@ export const machineApi = {
 
 
   queryAisleList: (machineId) => {
-    return getRequest(`/aisle/queryMachineAisleList/${machineId}`);
+    // 完全按照 Swagger 文档的规定来构建 URL
+    return getRequest(`/vending/machine/${machineId}/aisles`);
   },
 
   exportMachine: () => {
