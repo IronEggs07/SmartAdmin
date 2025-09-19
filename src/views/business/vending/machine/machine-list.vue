@@ -1,13 +1,5 @@
-<!--
-  * 机器列表
-  *
-  * @Author:    1024创新实验室-主任：卓大
-  * @Date:      2022-07-21 21:55:12
-  * @Wechat:    zhuda1024
-  * @Email:     lab1024@163.com
-  * @Copyright  1024创新实验室 （ https://1024lab.net ），Since 2012
--->
 <template>
+
   <!---------- 查询表单form begin ----------->
   <a-form class="smart-query-form">
     <a-row class="smart-query-form-row" v-privilege="'machine:query'">
@@ -78,8 +70,11 @@
 
     <a-table size="small" :dataSource="tableData" :columns="columns" rowKey="machineId"
       :scroll="{ x: 1200, y: yHeight }" bordered :pagination="false" :loading="tableLoading" :showSorterTooltip="false"
-      :row-selection="{ selectedRowKeys: selectedRowKeyList, onChange: onSelectChange }" @change="onChange"
-      @resizeColumn="handleResizeColumn">
+      :row-selection="{
+        selectedRowKeys: selectedRowKeyList,
+        onChange: onSelectChange
+      }" @change="onChange" @resizeColumn="handleResizeColumn" :expanded-row-keys="expandedRowKeys"
+      @expand="handleExpand">
 
 
       <template #bodyCell="{ record, column }">
@@ -115,23 +110,31 @@
           </div>
         </template>
       </template>
+      <!-- 货道子表单 -->
+      <template #expandedRowRender="{ record }">
+        <MachineAisleNestedTable :machineId="record.machineId" />
+      </template>
+      
     </a-table>
-
+    <!---------- 表格操作行 end ----------->
+    <!---------- 分页 begin ----------->
     <div class="smart-query-table-page">
       <a-pagination showSizeChanger showQuickJumper show-less-items :pageSizeOptions="PAGE_SIZE_OPTIONS"
         :defaultPageSize="queryForm.pageSize" v-model:current="queryForm.pageNum" v-model:pageSize="queryForm.pageSize"
         :total="total" @change="queryData" @showSizeChange="queryData" :show-total="(total) => `共${total}条`" />
     </div>
+    <!---------- 分页 end ----------->
   </a-card>
 
   <!-- 表单弹窗 -->
   <MachineFormModal ref="formModal" @reloadList="queryData" />
-  <!-- <MachineAisle ></MachineAisle>> -->
 </template>
 
 <script setup>
 import MachineFormModal from './components/machine-form-modal.vue';
-import { onMounted, reactive, ref, computed } from 'vue';
+import AisleFormModal from './components/aisle-form-modal.vue';
+import MachineAisleNestedTable from './components/machine-aisle-nested-table.vue';
+import { onMounted, reactive, ref, computed, h } from 'vue';
 import { MACHINE_STATUS_ENUM } from '/@/constants/business/vending/machine-const';
 import { message, Modal } from 'ant-design-vue';
 import { machineApi } from '/@/api/business/vending/machine-api';
@@ -139,7 +142,6 @@ import { SmartLoading } from '/@/components/framework/smart-loading';
 import { PAGE_SIZE_OPTIONS } from '/@/constants/common-const';
 import { smartSentry } from '/@/lib/smart-sentry'
 import _ from 'lodash';
-import { StarOutlined, StarFilled, StarTwoTone } from '@ant-design/icons-vue';
 
 
 // 表格列定义
@@ -225,6 +227,7 @@ const statusOptions = computed(() => Object.values(MACHINE_STATUS_ENUM).map(item
   desc: item.desc,
 })));
 
+
 // 查询表单
 const queryForm = reactive({
   machineName: undefined,
@@ -246,29 +249,8 @@ const tableLoading = ref(false);
 const selectedRowKeyList = ref([]);
 const formModal = ref();
 
-// 动态高度
-// const { yHeight } = useTableHeight(180);
-// 动态设置表格高度
-const yHeight = ref(0);
-onMounted(() => {
-  resetGetHeight();
-});
-function resetGetHeight() {
-  // 搜索部分高度
-  let doc = document.querySelector('.ant-form');
-  // 按钮部分高度
-  let btn = document.querySelector('.smart-table-btn-block');
-  // 表格头高度
-  let tableCell = document.querySelector('.ant-table-cell');
-  // 分页高度
-  let page = document.querySelector('.smart-query-table-page');
-  // 内容区总高度
-  let box = document.querySelector('.admin-content');
-  setTimeout(() => {
-    let dueHeight = doc.offsetHeight + 10 + 24 + btn.offsetHeight + 15 + tableCell.offsetHeight + page.offsetHeight + 20;
-    yHeight.value = box.offsetHeight - dueHeight;
-  }, 100);
-}
+// 用于存储当前展开行的 key
+const expandedRowKeys = ref([]);
 
 // ---------------------------- 数据查询 ----------------------------
 
@@ -429,9 +411,19 @@ async function batchDelete() {
   }
 }
 
+const handleExpand = (expanded, record) => {
+  if (expanded) {
+    expandedRowKeys.value = [record.machineId]; // 只保留当前展开的 key
+  } else {
+    expandedRowKeys.value = []; // 折叠时清空
+  }
+};
+
+
 // 页面加载时查询数据
 onMounted(() => {
   queryData();
+  console.log(tableData.value);
 });
 
 // 获取状态描述
@@ -442,7 +434,21 @@ function getStatusDesc(status) {
 </script>
 
 <style scoped>
-:deep(.ant-form-item) {
-  margin-bottom: 16px;
+.a-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%; /* 假设 a-card 的父容器有确定的高度 */
+}
+
+:deep(.ant-card-body) {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1; /* 让 card-body 占据所有剩余空间 */
+  overflow: hidden; /* 防止内部元素溢出 */
+}
+
+.a-table {
+  flex-grow: 1; /* 让 a-table 占据 card-body 内的所有剩余空间 */
+  overflow: auto; /* 表格内容超出时，表格自身出现滚动条 */
 }
 </style>

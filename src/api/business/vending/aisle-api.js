@@ -5,7 +5,7 @@ import { postRequest, getRequest, getDownload } from '/@/lib/axios';
 
 
 export const machineAisleApi = {
-  queryMachineAisleList: (param) => {
+  queryAisleList: (param) => {
     return postRequest('/aisle/query', param);
   },
 
@@ -24,4 +24,5 @@ export const machineAisleApi = {
   batchDelete: (aisleIdList) => {
     return postRequest('/aisle/batchDelete', aisleIdList);
   },
+
 };

@@ -30,6 +30,10 @@ export const machineApi = {
   },
 
 
+  queryAisleList: (machineId) => {
+    return getRequest(`/aisle/queryMachineAisleList/${machineId}`);
+  },
+
   exportMachine: () => {
     return getDownload('/vending/machine/export');
   },
