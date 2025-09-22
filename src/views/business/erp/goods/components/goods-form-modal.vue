@@ -161,7 +161,7 @@ const rules = {
     }
   ],
   goodsImage: [
-    { required: true, message: '商品图片不能为空' }
+    // { required: true, message: '商品图片不能为空' }
   ],
   remark: [
     { max: 255, message: '备注不能超过255个字符' }

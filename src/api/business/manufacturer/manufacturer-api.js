@@ -49,11 +49,28 @@ export const manufacturerApi = {
     return postRequest('/manufacturer/batchDelete', manufacturerIdList);
   },
 
-  // /**
-  //  * 导出厂家数据
-  //  * @returns
-  //  */
-  // exportManufacturer: () => {
-  //   return getDownload('/manufacturer/export');
-  // },
+  /**
+   * 导出厂家数据
+   * @returns
+   */
+  exportManufacturer: () => {
+    return getDownload('/manufacturer/export');
+  },
+
+  /**
+   * 导入厂家数据
+   * @param {*} file
+   * @returns
+   */
+  importManufacturer: (file) => {
+    return postRequest('/manufacturer/import', file);
+  },
+
+  /**
+   * 下载导入模板
+   * @returns
+   */
+  downloadTemplate: () => {
+    return getDownload('/manufacturer/downloadTemplate');
+  },
 };

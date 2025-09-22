@@ -17,6 +17,7 @@
 import { ref, onMounted, watch } from 'vue';
 import AisleFormModal from './aisle-form-modal.vue';
 import { machineApi } from '/@/api/business/vending/machine-api';
+import { machineAisleApi } from '/@/api/business/vending/aisle-api';
 //   import { useMachineStore } from '@/stores/machine';
 // import { storeToRefs } from 'pinia';
 
@@ -27,11 +28,26 @@ const props = defineProps({
     }
 });
 
+// 导入状态常量
+import { AISLE_STATUS_ENUM } from '/@/constants/business/vending/aisle-const';
+
+// 创建状态映射
+const statusMap = Object.values(AISLE_STATUS_ENUM).reduce((map, item) => {
+    map[item.value] = item.desc;
+    return map;
+}, {});
+
 const columns = ref([
     {
         title: '货道编号',
         dataIndex: 'aisleCode',
         width: 100,
+    },
+    {
+        title: '商品名称',
+        dataIndex: 'goodsName',
+        width: 150,
+        ellipsis: true
     },
     {
         title: '库存',
@@ -46,7 +62,8 @@ const columns = ref([
     {
         title: '状态',
         dataIndex: 'status',
-        width: 80,
+        width: 100,
+        customRender: ({ text }) => statusMap[text] || `未知状态(${text})`,
     },
     {
         title: '操作',
@@ -84,19 +101,40 @@ const currentRecord = ref(null);
 const aisleList = ref([]);
 // 加载货道数据
 const loadAisles = async () => {
-    if (!props.machineId)
+    if (!props.machineId) {
+        console.warn('machineId 为空，已中止加载货道数据');
         return;
+    }
+    
     try {
-        localLoading.value = true; // 开始加载
-        const { data } = await machineApi.queryAisleList(props.machineId);
-        aisleList.value = data.list || [];
+        localLoading.value = true;
+        console.log('开始加载货道数据，machineId:', props.machineId);
+        
+        // 调用我们已经确认的、唯一的、正确的API
+        const response = await machineApi.queryAisleList(props.machineId);
+        console.log('API响应数据:', response);
+        
+        // 【关键】根据“API契约”进行严谨的、确定性的数据解析
+        if (response && response.code === 0 && Array.isArray(response.data)) {
+            // 只有当 code 为 0 且 data 是一个数组时，才认为是有效数据
+            aisleList.value = response.data;
+            console.log('货道数据加载完成，数量:', aisleList.value.length);
+            if (aisleList.value.length === 0) {
+                console.warn('注意：API成功返回，但货道列表为空数组，请与后端确认该机器下是否有数据。');
+            }
+        } else {
+            // 如果 code 不为 0，或者 data 不存在/不是数组，都视为异常情况
+            aisleList.value = [];
+            console.error('API返回的数据格式不符合预期或操作失败:', response);
+        }
+        
     } catch (error) {
-        console.error('加载货道数据失败:', error);
+        aisleList.value = []; // 网络层面的错误
+        console.error('请求货道数据时发生网络错误:', error);
     } finally {
-        localLoading.value = false; // 结束加载
+        localLoading.value = false;
     }
 };
-
 
 
 watch(

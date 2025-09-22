@@ -25,4 +25,7 @@ export const machineAisleApi = {
     return postRequest('/aisle/batchDelete', aisleIdList);
   },
 
+  machineAisleClone: (param) => {
+    return postRequest('/aisle/clone', param);
+  },
 };

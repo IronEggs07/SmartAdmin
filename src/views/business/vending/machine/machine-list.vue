@@ -412,10 +412,13 @@ async function batchDelete() {
 }
 
 const handleExpand = (expanded, record) => {
+  console.log('展开状态变化:', { expanded, machineId: record.machineId, record });
   if (expanded) {
     expandedRowKeys.value = [record.machineId]; // 只保留当前展开的 key
+    console.log('展开机器货道，machineId:', record.machineId);
   } else {
     expandedRowKeys.value = []; // 折叠时清空
+    console.log('折叠机器货道');
   }
 };
 

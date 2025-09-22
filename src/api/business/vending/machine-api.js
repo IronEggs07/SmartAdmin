@@ -35,6 +35,15 @@ export const machineApi = {
     return getRequest(`/vending/machine/${machineId}/aisles`);
   },
 
+  // 备用方法：通过货道API查询特定机器的货道
+  queryAislesByMachine: (machineId) => {
+    return postRequest('/aisle/query', {
+      machineId: machineId,
+      pageNum: 1,
+      pageSize: 1000
+    });
+  },
+
   exportMachine: () => {
     return getDownload('/vending/machine/export');
   },

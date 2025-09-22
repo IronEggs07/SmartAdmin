@@ -54,6 +54,20 @@
             </template>
             批量删除
           </a-button>
+
+          <a-button @click="showImportModal" type="primary" v-privilege="'manufacturer:import'">
+            <template #icon>
+              <ImportOutlined />
+            </template>
+            导入
+          </a-button>
+
+          <a-button @click="onExportManufacturer" type="primary" v-privilege="'manufacturer:export'">
+            <template #icon>
+              <ExportOutlined />
+            </template>
+            导出
+          </a-button>
         </div>
         <div class="smart-table-setting-block">
           <TableOperator v-model="columns" :tableId="TABLE_ID_CONST.BUSINESS.ERP.MANUFACTURER" :refresh="queryData" />
@@ -105,6 +119,38 @@
   
       <!-- 表单抽屉 -->
       <ManufacturerFormModal ref="formModal" @reloadList="queryData" />
+
+      <!-- 导入弹窗 -->
+      <a-modal 
+        v-model:open="importModalVisible" 
+        title="导入厂商数据" 
+        :confirm-loading="importLoading"
+        @ok="handleImport" 
+        @cancel="handleCancelImport" 
+        okText="导入" 
+        cancelText="取消"
+      >
+        <div style="text-align: center; margin-bottom: 20px;">
+          <a-button type="primary" @click="downloadTemplate">
+            <template #icon><DownloadOutlined /></template>
+            下载导入模板
+          </a-button>
+        </div>
+        <a-upload-dragger
+          v-model:fileList="fileList"
+          name="file"
+          :multiple="false"
+          :before-upload="beforeUpload"
+          :showUploadList="true"
+          accept=".xls,.xlsx"
+        >
+          <p class="ant-upload-drag-icon">
+            <InboxOutlined style="font-size: 48px; color: #1890ff;" />
+          </p>
+          <p class="ant-upload-text">点击或拖拽文件到此处上传</p>
+          <p class="ant-upload-hint">支持 .xls 或 .xlsx 格式文件</p>
+        </a-upload-dragger>
+      </a-modal>
     </a-card>
   </template>
   
@@ -113,6 +159,7 @@
     import ManufacturerFormModal from './components/manufacturer-form-modal.vue'; // 修正1：组件名改为PascalCase
     import { onMounted, reactive, ref } from 'vue';
     import { message, Modal } from 'ant-design-vue';
+    import { ImportOutlined, ExportOutlined, DownloadOutlined, InboxOutlined } from '@ant-design/icons-vue';
     import { SmartLoading } from '/@/components/framework/smart-loading';
     import { PAGE_SIZE_OPTIONS } from '/@/constants/common-const';
     import { smartSentry } from '/@/lib/smart-sentry';
@@ -223,6 +270,82 @@
     }
   
     onMounted(queryData);
+  
+    // ---------------------------- 导入/导出状态 ----------------------------
+    const importModalVisible = ref(false);
+    const fileList = ref([]);
+    const importLoading = ref(false);
+  
+    // 显示导入弹窗
+    function showImportModal() {
+      importModalVisible.value = true;
+      fileList.value = [];
+    }
+  
+    // 取消导入
+    function handleCancelImport() {
+      importModalVisible.value = false;
+      fileList.value = [];
+    }
+  
+    // 下载导入模板
+    async function downloadTemplate() {
+      try {
+        await manufacturerApi.downloadTemplate();
+        message.success('模板下载成功');
+      } catch (e) {
+        smartSentry.captureError(e);
+        message.error('模板下载失败');
+      }
+    }
+  
+    // 处理文件上传
+    function beforeUpload(file) {
+      const isExcel = file.type === 'application/vnd.ms-excel' || 
+                     file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      if (!isExcel) {
+        message.error('只能上传 Excel 文件!');
+        return false;
+      }
+      fileList.value = [file];
+      return false; // 阻止自动上传
+    }
+  
+    // 执行导入
+    async function handleImport() {
+      if (fileList.value.length === 0) {
+        message.warning('请先选择要导入的文件');
+        return;
+      }
+  
+      const formData = new FormData();
+      formData.append('file', fileList.value[0]);
+  
+      importLoading.value = true;
+      try {
+        await manufacturerApi.importManufacturer(formData);
+        message.success('导入成功');
+        importModalVisible.value = false;
+        fileList.value = [];
+        queryData(); // 刷新列表
+      } catch (e) {
+        smartSentry.captureError(e);
+        message.error(e.response?.data?.msg || '导入失败');
+      } finally {
+        importLoading.value = false;
+      }
+    }
+  
+    // 导出数据
+    async function onExportManufacturer() {
+      try {
+        await manufacturerApi.exportManufacturer();
+        message.success('导出成功');
+      } catch (e) {
+        smartSentry.captureError(e);
+        message.error('导出失败');
+      }
+    }
   
     // ---------------------------- 添加/修改 ----------------------------
     // 修正3：使用ref引用子组件

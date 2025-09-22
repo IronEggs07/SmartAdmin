@@ -8,21 +8,29 @@
 
     
 
-            <a-form-item label="负责人" name="managerId">
-                <a-input-search v-model:value="form.managerName" placeholder="请选择负责人" readOnly
-                    @search="showManagerSelect">
-                    <template #enterButton>
-                        <a-button>选择</a-button>
-                    </template>
-                </a-input-search>
-            </a-form-item>
-
             <a-form-item label="状态" name="status">
-                <a-radio-group v-model:value="form.status">
+                <a-radio-group v-model:value="form.status" @change="handleStatusChange">
                     <a-radio v-for="status in statusOptions" :key="status.value" :value="status.value">
                         {{ status.desc }}
                     </a-radio>
                 </a-radio-group>
+            </a-form-item>
+
+            <a-form-item label="负责人" name="managerId">
+                <a-input-search 
+                    v-model:value="form.managerName" 
+                    placeholder="请选择负责人" 
+                    readOnly
+                    @search="showManagerSelect"
+                    :disabled="!form.status"
+                >
+                    <template #enterButton>
+                        <a-button :disabled="!form.status">选择</a-button>
+                    </template>
+                </a-input-search>
+                <div v-if="form.status" class="manager-hint">
+                    {{ form.status === GROUP_STATUS_ENUM.ADMIN.value ? '请选择5位管理员ID' : '请选择7位补货员ID' }}
+                </div>
             </a-form-item>
 
             <a-form-item label="备注" name="remark">
@@ -49,8 +57,8 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, nextTick } from 'vue';
-import { message } from 'ant-design-vue';
+import { ref, reactive, onMounted, nextTick, h } from 'vue';
+import { message, Modal } from 'ant-design-vue';
 import { SmartLoading } from '/@/components/framework/smart-loading';
 import { machineGroupApi } from '/@/api/business/vending/group-api';
 import { GROUP_STATUS_ENUM } from '/@/constants/business/vending/group-const';
@@ -156,11 +164,68 @@ function onSubmit() {
         });
 }
 
+// 状态变更处理
+function handleStatusChange() {
+    // 清空之前选择的负责人
+    form.managerId = undefined;
+    form.managerName = '';
+}
+
 // 显示负责人选择弹窗
-// function showManagerSelect() {
-//     // TODO: 实现负责人选择逻辑
-//     message.info('负责人选择功能待实现');
-// }
+function showManagerSelect() {
+    if (!form.status) {
+        message.warning('请先选择状态');
+        return;
+    }
+    
+    Modal.confirm({
+        title: '选择' + (form.status === GROUP_STATUS_ENUM.ADMIN.value ? '管理员' : '补货员'),
+        width: 600,
+        content: h('div', [
+            h('div', { style: 'margin-bottom: 16px' }, '请选择' + (form.status === GROUP_STATUS_ENUM.ADMIN.value ? '管理员' : '补货员') + 'ID'),
+            h('a-input', {
+                placeholder: '请输入' + (form.status === GROUP_STATUS_ENUM.ADMIN.value ? '5位管理员' : '7位补货员') + 'ID',
+                style: 'width: 200px; margin-right: 8px',
+                onChange: (e) => {
+                    const value = e.target.value;
+                    // 根据状态验证ID格式
+                    if (form.status === GROUP_STATUS_ENUM.ADMIN.value) {
+                        if (value && !/^\d{5}$/.test(value)) {
+                            return message.warning('管理员ID必须为5位数字');
+                        }
+                    } else {
+                        if (value && !/^\d{7}$/.test(value)) {
+                            return message.warning('补货员ID必须为7位数字');
+                        }
+                    }
+                    form.managerId = value;
+                },
+                value: form.managerId
+            }),
+            h('a-button', {
+                type: 'primary',
+                onClick: () => {
+                    if (!form.managerId) {
+                        return message.warning('请输入ID');
+                    }
+                    // 模拟获取负责人名称，实际项目中应该调用API获取
+                    form.managerName = form.status === GROUP_STATUS_ENUM.ADMIN.value 
+                        ? `管理员(${form.managerId})` 
+                        : `补货员(${form.managerId})`;
+                    Modal.destroyAll();
+                }
+            }, '确认')
+        ]),
+        onOk: () => {
+            if (!form.managerId) {
+                message.warning('请选择负责人');
+                return Promise.reject();
+            }
+        },
+        okButtonProps: { style: 'display: none' },
+        cancelButtonProps: { style: 'display: none' }
+    });
+}
 
 // 使用defineExpose暴露方法，让父组件可以通过ref调用
 defineExpose({
@@ -168,4 +233,10 @@ defineExpose({
 });
 </script>
 
-<style scoped></style>
+<style scoped>
+.manager-hint {
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.45);
+    margin-top: 4px;
+}
+</style>

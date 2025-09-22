@@ -15,7 +15,8 @@
           <template #enterButton>
             <a-button>选择</a-button>
           </template>
-</a-input-search> -->
+        </a-input-search> -->
+        <a-input type="text" placeholder="请输入负责人" />
       </a-form-item>
 
       <a-form-item class="smart-query-form-item">
@@ -48,6 +49,7 @@
           </template>
           新建
         </a-button>
+
         <a-button @click="confirmBatchDelete" danger :disabled="selectedRowKeyList.length === 0"
           v-privilege="'group:batchDelete'">
           <template #icon>
@@ -55,6 +57,19 @@
           </template>
           批量删除
         </a-button>
+        <!-- <a-button @click="showImportModal" type="primary" v-privilege="'group:import'">
+          <template #icon>
+            <ImportOutlined />
+          </template>
+          导入
+        </a-button>
+
+        <a-button @click="onExportGroup" type="primary" v-privilege="'group:export'">
+          <template #icon>
+            <ExportOutlined />
+          </template>
+          导出
+        </a-button> -->
       </div>
     </a-row>
     <!---------- 表格操作行 end ----------->
@@ -83,6 +98,27 @@
     <!-- 表单弹窗 -->
     <GroupFormModal ref="formModal" @reloadList="queryData" />
 
+    <!-- 导入弹窗 -->
+    <a-modal v-model:open="importModalVisible" title="导入机器组数据" :confirm-loading="importLoading" @ok="handleImport"
+      @cancel="handleCancelImport" okText="导入" cancelText="取消">
+      <div style="text-align: center; margin-bottom: 20px;">
+        <a-button type="primary" @click="downloadTemplate">
+          <template #icon>
+            <DownloadOutlined />
+          </template>
+          下载导入模板
+        </a-button>
+      </div>
+      <a-upload-dragger v-model:fileList="fileList" name="file" :multiple="false" :before-upload="beforeUpload"
+        :showUploadList="true" accept=".xls,.xlsx">
+        <p class="ant-upload-drag-icon">
+          <InboxOutlined style="font-size: 48px; color: #1890ff;" />
+        </p>
+        <p class="ant-upload-text">点击或拖拽文件到此处上传</p>
+        <p class="ant-upload-hint">支持 .xls 或 .xlsx 格式文件</p>
+      </a-upload-dragger>
+    </a-modal>
+
     <!-- 负责人选择弹窗 -->
     <!-- <UserSelectModal v-if="managerSelectVisible" :visible="managerSelectVisible" @ok="handleManagerSelect"
       @cancel="managerSelectVisible = false" /> -->
@@ -98,6 +134,8 @@ import GroupFormModal from './components/group-form-modal.vue';
 // import UserSelectModal from './components/user-select-modal.vue';
 import { PAGE_SIZE_OPTIONS } from '/@/constants/common-const';
 import { GROUP_STATUS_ENUM } from '/@/constants/business/vending/group-const';
+import { ImportOutlined, ExportOutlined, DownloadOutlined, InboxOutlined } from '@ant-design/icons-vue';
+import { smartSentry } from '/@/lib/smart-sentry';
 import { SearchOutlined, ReloadOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons-vue';
 
 // 表格列配置
@@ -164,6 +202,11 @@ const selectedRowKeyList = ref([]);
 // 弹窗相关
 const formModal = ref();
 const managerSelectVisible = ref(false); // 选择管理员弹窗
+
+// 导入/导出状态
+const importModalVisible = ref(false);
+const fileList = ref([]);
+const importLoading = ref(false);
 
 // 查询数据
 async function queryData() {
@@ -273,12 +316,83 @@ function onSelectChange(selectedRowKeys) {
   selectedRowKeyList.value = selectedRowKeys;
 }
 
+// 显示导入弹窗
+function showImportModal() {
+  importModalVisible.value = true;
+  fileList.value = [];
+}
+
+// 取消导入
+function handleCancelImport() {
+  importModalVisible.value = false;
+  fileList.value = [];
+}
+
+// 下载导入模板
+async function downloadTemplate() {
+  try {
+    await machineGroupApi.downloadGroupTemplate();
+    message.success('模板下载成功');
+  } catch (e) {
+    smartSentry.captureError(e);
+    message.error('模板下载失败');
+  }
+}
+
+// 处理文件上传
+function beforeUpload(file) {
+  const isExcel = file.type === 'application/vnd.ms-excel' ||
+    file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+  if (!isExcel) {
+    message.error('只能上传 Excel 文件!');
+    return false;
+  }
+  fileList.value = [file];
+  return false; // 阻止自动上传
+}
+
+// 执行导入
+async function handleImport() {
+  if (fileList.value.length === 0) {
+    message.warning('请先选择要导入的文件');
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('file', fileList.value[0]);
+
+  importLoading.value = true;
+  try {
+    await machineGroupApi.importMachineGroup(formData);
+    message.success('导入成功');
+    importModalVisible.value = false;
+    fileList.value = [];
+    queryData(); // 刷新列表
+  } catch (e) {
+    smartSentry.captureError(e);
+    message.error(e.response?.data?.msg || '导入失败');
+  } finally {
+    importLoading.value = false;
+  }
+}
+
+// 导出数据
+async function onExportGroup() {
+  try {
+    await machineGroupApi.exportMachineGroup();
+    message.success('导出成功');
+  } catch (e) {
+    smartSentry.captureError(e);
+    message.error('导出失败');
+  }
+}
+
 // 显示负责人选择弹窗
 // function showManagerSelect() {
 //   managerSelectVisible.value = true;
 // }
 
-// 处理负责人选择
+// 处理选择负责人
 // function handleManagerSelect(user) {
 //   if (user) {
 //     queryForm.managerId = user.userId;
