@@ -50,7 +50,7 @@ const columns = ref([
         ellipsis: true
     },
     {
-        title: '库存',
+        title: '货道剩余',
         dataIndex: 'stock',
         width: 100,
     },

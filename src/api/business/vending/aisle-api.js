@@ -14,7 +14,7 @@ export const machineAisleApi = {
   },
 
   updateMachineAisle: (param) => {
-    return postRequest('/aisle/update', param);
+    return postRequest('/vending/aisle/update', param);
   },
 
   deleteMachineAisle: (aisleId) => {

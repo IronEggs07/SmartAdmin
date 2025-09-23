@@ -48,7 +48,7 @@
   </a-card>
 </template>
 <script setup>
-  import { computed, onMounted, reactive, ref } from 'vue';
+  import { computed, h, onMounted, reactive, ref } from 'vue';
   import { message, Modal } from 'ant-design-vue';
   import { SmartLoading } from '/@/components/framework/smart-loading';
   import CategoryFormModal from './category-form-modal.vue';
@@ -87,6 +87,12 @@
     {
       title: columName,
       dataIndex: 'categoryName',
+      customRender: ({ record }) => {
+        return h('div', { class: 'flex items-center' }, [
+          record.icon ? h('img', { src: record.icon, style: 'width: 24px; height: 24px; margin-right: 8px;' }) : null,
+          h('span', record.categoryName)
+        ]);
+      }
     },
     {
       title: '操作',

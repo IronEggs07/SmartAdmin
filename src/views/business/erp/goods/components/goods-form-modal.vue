@@ -81,7 +81,7 @@
   </a-drawer>
 </template>
 <script setup>
-import { ref, reactive, nextTick } from 'vue';
+import { ref, reactive, nextTick, onMounted } from 'vue';
 import { message, Modal, Upload } from 'ant-design-vue';
 import dayjs from 'dayjs';
 import { SmartLoading } from '/@/components/framework/smart-loading';
@@ -175,6 +175,7 @@ const visible = ref(false);
 function onClose() {
   Object.assign(form, formDefault);
   visible.value = false;
+  fileList.value = []
 }
 
 function onSubmit() {
@@ -236,7 +237,7 @@ const handleUpload = async ({ file, onSuccess, onError }) => {
 
     // 调用后端文件上传接口，指定文件夹为 goods
     const result = await fileApi.uploadFile(formData, 'goods');
-    
+
     // 根据实际返回结构调整
     if (result && result.data) {
       // 尝试不同的可能返回字段

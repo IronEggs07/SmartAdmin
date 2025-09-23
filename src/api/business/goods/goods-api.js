@@ -37,5 +37,13 @@ export const goodsApi = {
   // 导出 @author 卓大
   exportGoods : () =>{
     return getDownload('/goods/exportGoods');
-  }
+  },
+  // 下载模板 @author 卓大
+  downloadTemplate : () =>{
+    return getDownload('/goods/downloadTemplate');
+  },
+  //批量上下架 @author 卓大
+  batchUpdateShelvesStatus : (goodsIdList, shelvesFlag) =>{
+    return postRequest('/goods/batchUpdateShelvesStatus', {goodsIdList, shelvesFlag});
+  },
 };

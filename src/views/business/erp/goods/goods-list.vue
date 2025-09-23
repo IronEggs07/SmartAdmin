@@ -75,6 +75,22 @@
           批量删除
         </a-button>
 
+        <a-button @click="batchShelves(true)" type="primary" :disabled="selectedRowKeyList.length === 0"
+          v-privilege="'goods:batchShelves'">
+          <template #icon>
+            <ArrowUpOutlined />
+          </template>
+          批量上架
+        </a-button>
+
+        <a-button @click="batchShelves(false)" type="primary" danger :disabled="selectedRowKeyList.length === 0"
+          v-privilege="'goods:batchShelves'">
+          <template #icon>
+            <ArrowDownOutlined />
+          </template>
+          批量下架
+        </a-button>
+
         <a-button @click="showImportModal" type="primary" v-privilege="'goods:importGoods'">
           <template #icon>
             <ImportOutlined />
@@ -238,6 +254,16 @@ const columns = ref([
     resizable: true,
     sorter: true,
     width: 80,
+    // TODO: 后续添加折扣价显示逻辑
+    // customRender: ({ text, record }) => {
+    //   if (record.discountPrice && record.discountPrice < text) {
+    //     return h('div', [
+    //       h('div', { style: 'text-decoration: line-through; color: #999' }, `¥${text}`),
+    //       h('div', { style: 'color: #ff4d4f' }, `¥${record.discountPrice}`)
+    //     ]);
+    //   }
+    //   return `¥${text}`;
+    // }
   },
   {
     title: '状态',
@@ -471,7 +497,7 @@ async function onImportGoods() {
 async function onExportGoods() {
   await goodsApi.exportGoods();
 }
-
+// 分页
 function onChange(pagination, filters, sorter, { action }) {
   if (action === 'sort') {
     const { order, field } = sorter;
@@ -491,6 +517,85 @@ function onChange(pagination, filters, sorter, { action }) {
   }
 }
 
+// 批量上下架确认
+function confirmBatchShelves(shelvesFlag) {
+  if (selectedRowKeyList.value.length === 0) {
+    message.warning('请先选择要操作的商品');
+    return;
+  }
+  
+  Modal.confirm({
+    title: '提示',
+    content: `确定要${shelvesFlag ? '上架' : '下架'}选中的${selectedRowKeyList.value.length}个商品吗？`,
+    okText: shelvesFlag ? '上架' : '下架',
+    okType: shelvesFlag ? 'primary' : 'danger',
+    onOk: () => batchUpdateShelvesStatus(shelvesFlag),
+    cancelText: '取消',
+  });
+}
+
+/**
+ * @function batchUpdateShelvesStatus
+ * @description 执行批量上下架操作
+ * @important 注意：这里使用商品更新API来更新上下架状态，以保持数据一致性
+ * @param {boolean} shelvesFlag - 上架状态，true为上架，false为下架
+ */
+async function batchUpdateShelvesStatus(shelvesFlag) {
+  if (!selectedRowKeyList.value.length) return;
+  
+  try {
+    SmartLoading.show();
+    
+    // 批量更新每个商品的上下架状态
+    const updatePromises = selectedRowKeyList.value.map(async (goodsId) => {
+      //! ===== 查找当前商品信息 =====
+      const currentGoods = tableData.value.find(item => item.goodsId === goodsId);
+      if (!currentGoods) return;
+      
+      //! ===== 创建更新对象 =====
+      //! 保留原有属性，只更新shelvesFlag
+      const updateData = {
+        ...currentGoods, // 保留原有属性
+        shelvesFlag,     // 更新上下架状态
+        /**
+         * @note 注意：这里假设后端需要特定格式的更新数据，请根据实际API调整
+         * @example
+         * {
+         *   goodsId: currentGoods.goodsId,
+         *   goodsName: currentGoods.goodsName,
+         *   // ...其他必要字段
+         *   shelvesFlag: shelvesFlag
+         * }
+         */
+      };
+      
+      //! ===== 调用更新API =====
+      return goodsApi.updateGoods(updateData);
+    });
+    
+    //! ===== 等待所有更新操作完成 =====
+    await Promise.all(updatePromises);
+    
+    //! ===== 更新本地表格数据 =====
+    const selectedIds = new Set(selectedRowKeyList.value);
+    tableData.value = tableData.value.map(item => 
+      selectedIds.has(item.goodsId) ? { ...item, shelvesFlag } : item
+    );
+    
+    message.success(`成功${shelvesFlag ? '上架' : '下架'} ${selectedRowKeyList.value.length} 个商品`);
+    selectedRowKeyList.value = [];
+  } catch (e) {
+    console.error('批量操作失败:', e);
+    message.error(`${shelvesFlag ? '上架' : '下架'}商品失败: ${e.message || '未知错误'}`);
+    smartSentry.captureError(e);
+  } finally {
+    SmartLoading.hide();
+  }
+}
+
+// 保留原有的批量上下架方法，但改为调用确认方法
+const batchShelves = confirmBatchShelves;
+// 下划线转驼峰
 function camelToUnderscore(str) {
   return str.replace(/([A-Z])/g, '_$1').toLowerCase();
 }
