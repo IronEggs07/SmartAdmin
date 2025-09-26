@@ -96,6 +96,7 @@ import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue
 import DictSelect from '/@/components/support/dict-select/index.vue';
 import { DICT_CODE_ENUM } from '/@/constants/support/dict-const';
 import { PlusOutlined } from '@ant-design/icons-vue';
+import { FILE_FOLDER_TYPE_ENUM } from '/@/constants/support/file-const.js';
 
 // emit
 const emit = defineEmits(['reloadList']);
@@ -185,7 +186,7 @@ function onSubmit() {
       SmartLoading.show();
       try {
         // 关键：创建一个提交用的副本，并处理数据格式
-        const submitForm = { ...form };
+        const submitForm = { ...form ,price: Number(form.price)};
         if (Array.isArray(submitForm.place)) {
           submitForm.place = submitForm.place.join(',');
         }
@@ -229,49 +230,51 @@ const beforeUpload = (file) => {
 };
 
 // 自定义上传处理
-const handleUpload = async ({ file, onSuccess, onError }) => {
+async function handleUpload(options) {
+  // 1. 显示加载状态
+  // uploadLoading.value = true; 
+
   try {
-    SmartLoading.show('正在上传图片...');
+    // 2. 创建 FormData 并使用正确的“接头暗号”
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append('file', options.file);
 
-    // 调用后端文件上传接口，指定文件夹为 goods
-    const result = await fileApi.uploadFile(formData, 'goods');
+    // 3. 调用正确的API，并指定文件夹为 'goods'
+    const res = await fileApi.uploadFile(formData, FILE_FOLDER_TYPE_ENUM.COMMON.value);
 
-    // 根据实际返回结构调整
-    if (result && result.data) {
-      // 尝试不同的可能返回字段
-      const imageUrl = result.data.url || result.data.fileUrl || (result.data.data && result.data.data.url);
-      if (imageUrl) {
-        form.goodsImage = imageUrl;
-        onSuccess();
-        message.success('上传成功');
-        return;
-      }
+    if (res.code === 0) {
+      // 4. 上传成功，从返回结果中获取 URL 和 Key
+      const uploadedFile = res.data;
+
+      // 5. 【关键】将返回的 URL 更新到你的表单数据中
+      form.goodsImage = uploadedFile.fileUrl; // 或者 fileKey，取决于你保存商品时后端需要哪个
+
+      message.success('图片上传成功');
+
+
+    } else {
+      // API返回业务错误
+      message.error(res.msg || '图片上传失败');
     }
-    throw new Error('上传失败：无效的响应格式');
+
   } catch (error) {
-    console.error('上传失败:', error);
-    let errorMessage = '上传失败';
-    if (error.response) {
-      // 服务器返回了错误响应
-      errorMessage = error.response.data?.message || error.response.statusText || errorMessage;
-    } else if (error.request) {
-      // 请求已发送但未收到响应
-      errorMessage = '无法连接到服务器，请检查网络连接';
-    }
-    message.error(errorMessage);
-    onError(errorMessage);
+    smartSentry.captureError(error);
+    message.error('图片上传失败，请检查网络或联系管理员');
   } finally {
-    SmartLoading.hide();
+    // 6. 无论成功失败，都关闭加载状态
+    // uploadLoading.value = false;
   }
-};
+}
 
 // 修改 showDrawer 方法，在编辑时初始化图片
 function showDrawer(rowData) {
   Object.assign(form, formDefault);
   if (rowData && !_.isEmpty(rowData)) {
-    Object.assign(form, rowData);
+    const rowDataCopy = {
+      ...rowData,
+      price: rowData.price ? Number(rowData.price) : undefined
+    };
+    Object.assign(form, rowDataCopy);
     // 初始化文件列表
     if (rowData.goodsImage) {
       fileList.value = [{
@@ -290,6 +293,7 @@ function showDrawer(rowData) {
   nextTick(() => {
     formRef.value?.clearValidate();
   });
+
 }
 </script>
 <style scoped>

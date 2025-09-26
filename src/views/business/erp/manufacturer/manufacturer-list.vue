@@ -69,9 +69,9 @@
             导出
           </a-button>
         </div>
-        <div class="smart-table-setting-block">
+        <!-- <div class="smart-table-setting-block">
           <TableOperator v-model="columns" :tableId="TABLE_ID_CONST.BUSINESS.ERP.MANUFACTURER" :refresh="queryData" />
-        </div>
+        </div> -->
       </a-row>
       <!---------- 表格操作行 end ----------->
       <a-table
@@ -88,9 +88,9 @@
         @change="onChange"
         @resizeColumn="handleResizeColumn"
       >
-        <template #headerCell="{ column }">
+        <!-- <template #headerCell="{ column }">
           <SmartHeaderCell v-model:value="queryForm[column.filterOptions?.key || column.dataIndex]" :column="column" @change="queryData" />
-        </template>
+        </template> -->
   
         <template #bodyCell="{ record, column }">
           <template v-if="column.dataIndex === 'action'">
@@ -101,7 +101,7 @@
           </template>
         </template>
       </a-table>
-  
+  <!-- 表格 -->
       <div class="smart-query-table-page">
         <a-pagination
           showSizeChanger

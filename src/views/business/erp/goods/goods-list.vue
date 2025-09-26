@@ -375,6 +375,7 @@ const formModal = ref();
 
 function addGoods(goodsData) {
   formModal.value.showDrawer(goodsData);
+  console.log(goodsData);
 }
 // ---------------------------- 单个删除 ----------------------------
 

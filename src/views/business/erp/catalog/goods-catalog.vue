@@ -9,7 +9,7 @@
 -->
 <template>
   <div>
-    <CategoryTreeTable :category-type="CATEGORY_TYPE_ENUM.GOODS.value" />
+    <CategoryTreeTable :category-type="CATEGORY_TYPE_ENUM.DEMO.value" />
   </div>
 </template>
 <script setup>

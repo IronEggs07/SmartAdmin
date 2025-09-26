@@ -133,7 +133,7 @@
           <template v-if="column.dataIndex === 'operate'">
             <div class="smart-table-operate">
               <a-button
-                v-if="record.menuType !== MENU_TYPE_ENUM.POINTS.value"
+                v-if="record.menuType !== MENU_TYPE_ENUM.POINTS.value"  
                 v-privilege="'system:menu:update'"
                 type="link"
                 size="small"
